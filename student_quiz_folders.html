@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block title %}My Quiz Submissions - LMS{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-folder-open"></i> My Quiz Submissions
+                    </h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <input type="text" class="form-control" id="search_input" 
+                                   placeholder="Search by quiz title or subject...">
+                        </div>
+                        <div class="col-md-6">
+                            <select class="form-control" id="status_filter">
+                                <option value="">All Statuses</option>
+                                <option value="passed">Passed</option>
+                                <option value="failed">Not Passed</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quiz Folders Grid -->
+    {% if folders %}
+    <div class="row">
+        {% for folder in folders %}
+        <div class="col-lg-4 col-md-6 mb-4 quiz-folder" data-quiz="{{ folder.quiz_title|lower }}" 
+             data-status="{% if folder.submission_data.is_passed %}passed{% else %}failed{% endif %}">
+            <div class="card shadow-sm h-100 transition-hover">
+                <div class="card-header {% if folder.submission_data.is_passed %}bg-success{% else %}bg-warning{% endif %} text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-folder"></i> {{ folder.quiz_title }}
+                    </h6>
+                </div>
+
+                <div class="card-body">
+                    <!-- Quiz Info -->
+                    <div class="quiz-info mb-3">
+                        <div class="info-row mb-2">
+                            <small class="text-muted">Subject:</small>
+                            <strong>{{ folder.submission_data.subject }}</strong>
+                        </div>
+                        <div class="info-row mb-2">
+                            <small class="text-muted">Quiz #:</small>
+                            <strong>{{ folder.submission_data.quiz_number }}</strong>
+                        </div>
+                        <div class="info-row mb-2">
+                            <small class="text-muted">Teacher:</small>
+                            <strong>{{ folder.submission_data.teacher_name }}</strong>
+                        </div>
+                    </div>
+
+                    <!-- Score Display -->
+                    <div class="score-display p-3 bg-light rounded mb-3 text-center">
+                        <h3 class="font-weight-bold {% if folder.submission_data.is_passed %}text-success{% else %}text-danger{% endif %}">
+                            {{ folder.submission_data.percentage }}%
+                        </h3>
+                        <small class="text-muted">
+                            {{ folder.submission_data.score }}/{{ folder.submission_data.total_questions }} Correct
+                        </small>
+                    </div>
+
+                    <!-- Status Badge -->
+                    <div class="text-center mb-3">
+                        {% if folder.submission_data.is_passed %}
+                        <span class="badge badge-success badge-lg">
+                            <i class="fas fa-check-circle"></i> PASSED
+                        </span>
+                        {% else %}
+                        <span class="badge badge-danger badge-lg">
+                            <i class="fas fa-times-circle"></i> NOT PASSED
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Attempt Details -->
+                    <div class="attempt-details small text-muted">
+                        <div class="row">
+                            <div class="col-6">
+                                <small>
+                                    <i class="fas fa-hourglass"></i>
+                                    {{ folder.submission_data.time_taken_formatted }}
+                                </small>
+                            </div>
+                            <div class="col-6 text-right">
+                                <small>
+                                    <i class="fas fa-calendar"></i>
+                                    {{ folder.submission_data.submitted_at|truncate(10, true) }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-footer bg-light">
+                    <a href="{{ url_for('professional_quiz_result', submission_id=folder.submission_id) }}" 
+                       class="btn btn-sm btn-primary btn-block">
+                        <i class="fas fa-eye"></i> View Details
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <!-- Empty State -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow text-center p-5">
+                <div style="font-size: 48px; color: #ccc; margin-bottom: 20px;">
+                    <i class="fas fa-inbox"></i>
+                </div>
+                <h4 class="text-muted mb-3">No Quiz Submissions Yet</h4>
+                <p class="text-muted mb-4">
+                    You haven't submitted any quizzes yet. 
+                    <a href="{{ url_for('student_dashboard') }}">Go back and take a quiz!</a>
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Pagination Stats -->
+    {% if folders %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="alert alert-light text-center">
+                <small class="text-muted">
+                    Showing <strong>{{ folders|length }}</strong> quiz submission(s)
+                </small>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Back Button -->
+    <div class="row mt-4 mb-4">
+        <div class="col-12">
+            <a href="{{ url_for('student_dashboard') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .quiz-folder {
+        opacity: 1;
+        transition: all 0.3s ease;
+    }
+
+    .quiz-folder.hidden {
+        opacity: 0;
+        display: none;
+    }
+
+    .card.transition-hover {
+        transition: all 0.3s ease;
+    }
+
+    .card.transition-hover:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+    }
+
+    .score-display {
+        border: 2px solid #dee2e6;
+    }
+
+    .badge-lg {
+        padding: 8px 12px;
+        font-size: 14px;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+    }
+</style>
+
+<script>
+    // Search and filter functionality
+    document.getElementById('search_input').addEventListener('keyup', function() {
+        filterFolders();
+    });
+
+    document.getElementById('status_filter').addEventListener('change', function() {
+        filterFolders();
+    });
+
+    function filterFolders() {
+        const searchTerm = document.getElementById('search_input').value.toLowerCase();
+        const statusFilter = document.getElementById('status_filter').value;
+
+        const folders = document.querySelectorAll('.quiz-folder');
+
+        folders.forEach(folder => {
+            const quizName = folder.dataset.quiz;
+            const status = folder.dataset.status;
+
+            let show = true;
+
+            // Search filter
+            if (searchTerm && !quizName.includes(searchTerm)) {
+                show = false;
+            }
+
+            // Status filter
+            if (statusFilter && status !== statusFilter) {
+                show = false;
+            }
+
+            if (show) {
+                folder.classList.remove('hidden');
+            } else {
+                folder.classList.add('hidden');
+            }
+        });
+    }
+</script>
+{% endblock %}

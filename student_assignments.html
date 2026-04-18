@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Activities{% endblock %}
+{% block content %}
+<div class="container">
+  <h1 class="page-title">Assignments & Quizzes</h1>
+  {% if activities and activities|length > 0 %}
+    <ul class="card-list">
+      {% for a in activities %}
+        <li class="card">
+          <div class="card-body">
+            <div class="badge">{{ a.type|capitalize }}</div>
+            <h3 class="card-title">{{ a.title }}</h3>
+            {% if a.due_date %}
+              <p class="muted">Due: {{ a.due_date.strftime('%Y-%m-%d %H:%M') if a.due_date.strftime is defined else a.due_date }}</p>
+            {% endif %}
+            <p class="muted">{{ a.description }}</p>
+            {% if a.attachments and a.attachments|length > 0 %}
+              <p class="muted">Materials: {{ a.attachments|length }}</p>
+            {% endif %}
+            <a class="btn btn-primary" href="{{ url_for('student_activity_detail', activity_id=a.id) }}">Open</a>
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="muted">No activities available.</p>
+  {% endif %}
+</div>
+{% endblock %}

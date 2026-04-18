@@ -1,0 +1,351 @@
+{% extends "base.html" %}
+
+{% block title %}Review Generated Quiz - LMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-lg-11 mx-auto">
+            <!-- Header Section -->
+            <div class="card shadow-lg mb-4 border-0">
+                <div class="card-header bg-gradient bg-primary text-white">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h2 class="mb-1">
+                                <i class="fas fa-clipboard-check"></i> Review & Approve Generated Quiz
+                            </h2>
+                            <small>Generated on {{ generation_timestamp }}</small>
+                        </div>
+                        <div class="col-auto">
+                            <span class="badge badge-success badge-lg p-2">
+                                <i class="fas fa-check-circle"></i> Ready for Review
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <!-- Quiz Metadata -->
+                    <div class="row mb-4 pb-4 border-bottom">
+                        <div class="col-md-3">
+                            <h6 class="text-muted">Title</h6>
+                            <h5 class="font-weight-bold">{{ quiz_data.title }}</h5>
+                        </div>
+                        <div class="col-md-3">
+                            <h6 class="text-muted">Subject</h6>
+                            <h5 class="font-weight-bold">
+                                <i class="fas fa-book"></i> {{ quiz_data.subject }}
+                            </h5>
+                        </div>
+                        <div class="col-md-3">
+                            <h6 class="text-muted">Question Type</h6>
+                            <h5 class="font-weight-bold">
+                                {% if quiz_data.quiz_type == 'mcq' %}
+                                    <span class="badge badge-info">MCQ</span>
+                                {% elif quiz_data.quiz_type == 'essay' %}
+                                    <span class="badge badge-warning">Essay</span>
+                                {% else %}
+                                    <span class="badge badge-secondary">Mixed</span>
+                                {% endif %}
+                            </h5>
+                        </div>
+                        <div class="col-md-3">
+                            <h6 class="text-muted">Total Questions</h6>
+                            <h5 class="font-weight-bold">
+                                <i class="fas fa-list-ol"></i> {{ quiz_data.questions|length }}
+                            </h5>
+                        </div>
+                    </div>
+
+                    <!-- Quality Metrics -->
+                    <div class="row mb-4">
+                        <div class="col-lg-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="text-muted mb-2">Quality Score</h6>
+                                    <h3 class="mb-0">
+                                        <span class="badge badge-success">{{ quality_metrics.overall_score }}/100</span>
+                                    </h3>
+                                    <small class="text-success">✓ {{ quality_metrics.status }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="text-muted mb-2">Uniqueness</h6>
+                                    <h3 class="mb-0">
+                                        <span class="badge badge-info">{{ quality_metrics.uniqueness }}%</span>
+                                    </h3>
+                                    <small class="text-info">No Repetition</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="text-muted mb-2">Difficulty</h6>
+                                    <h3 class="mb-0">
+                                        <span class="badge badge-warning">{{ quiz_data.difficulty|title }}</span>
+                                    </h3>
+                                    <small class="text-warning">Balanced</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="text-muted mb-2">Time Limit</h6>
+                                    <h3 class="mb-0">
+                                        <span class="badge badge-secondary">{{ quiz_data.time_limit_minutes }} min</span>
+                                    </h3>
+                                    <small class="text-secondary">Per student</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Questions Section -->
+            <div class="card shadow-lg mb-4 border-0">
+                <div class="card-header bg-light border-bottom">
+                    <h5 class="mb-0">
+                        <i class="fas fa-question-circle"></i> Quiz Questions ({{ quiz_data.questions|length }} total)
+                    </h5>
+                </div>
+
+                <div class="card-body">
+                    {% if quiz_data.questions %}
+                        {% for question in quiz_data.questions %}
+                            <div class="question-card mb-4 pb-4 border-bottom">
+                                <!-- Question Header -->
+                                <div class="row align-items-start mb-3">
+                                    <div class="col">
+                                        <h6 class="text-primary font-weight-bold">
+                                            <i class="fas fa-question"></i> Question {{ loop.index }}
+                                        </h6>
+                                        <p class="question-text mb-2">
+                                            <strong>{{ question.question }}</strong>
+                                        </p>
+                                    </div>
+                                    <div class="col-auto">
+                                        {% if question.type == 'mcq' %}
+                                            <span class="badge badge-info">MCQ</span>
+                                        {% elif question.type == 'essay' %}
+                                            <span class="badge badge-warning">Essay</span>
+                                        {% endif %}
+                                        <span class="badge badge-secondary ml-1">
+                                            {{ question.points or '1' }} point{{ 's' if question.points != 1 else '' }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- MCQ Options -->
+                                {% if question.type == 'mcq' and question.options %}
+                                    <div class="options-container ml-3">
+                                        {% for option in question.options %}
+                                            <div class="custom-control custom-radio mb-2">
+                                                <input type="radio" class="custom-control-input" 
+                                                       id="q{{ loop.index0 }}_opt{{ loop.index0 }}" disabled>
+                                                <label class="custom-control-label" for="q{{ loop.index0 }}_opt{{ loop.index0 }}">
+                                                    {{ option }}
+                                                    {% if option == question.correct_answer %}
+                                                        <span class="badge badge-success ml-2">
+                                                            <i class="fas fa-check"></i> Correct Answer
+                                                        </span>
+                                                    {% endif %}
+                                                </label>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+
+                                <!-- Essay Explanation -->
+                                {% if question.type == 'essay' %}
+                                    <div class="alert alert-light border ml-3">
+                                        <p class="mb-0">
+                                            <strong>Expected Answer Guidelines:</strong><br>
+                                            {{ question.correct_answer or 'Student answer will be manually evaluated' }}
+                                        </p>
+                                    </div>
+                                {% endif %}
+
+                                <!-- Explanation -->
+                                {% if question.explanation %}
+                                    <div class="ml-3 mt-2">
+                                        <small class="text-muted">
+                                            <strong>Explanation:</strong> {{ question.explanation }}
+                                        </small>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i> No questions found. Please regenerate the quiz.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="card shadow-lg border-0 mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-12">
+                            <h5 class="mb-3">
+                                <i class="fas fa-check-circle"></i> Ready to Publish?
+                            </h5>
+                            <p class="text-muted mb-4">
+                                Review the questions above. If they meet your requirements, click "Approve & Publish" to make the quiz available to students. 
+                                Otherwise, click "Regenerate" to get a new set of questions.
+                            </p>
+                        </div>
+                    </div>
+
+                    <form method="POST" class="d-flex gap-2">
+                        <!-- Approve Button -->
+                        <button type="submit" name="action" value="approve" class="btn btn-success btn-lg" 
+                                title="Approve this quiz and publish it for students">
+                            <i class="fas fa-check"></i> Approve & Publish
+                        </button>
+
+                        <!-- Regenerate Button -->
+                        <button type="submit" name="action" value="regenerate" class="btn btn-info btn-lg"
+                                title="Generate a different set of questions">
+                            <i class="fas fa-redo"></i> Regenerate Questions
+                        </button>
+
+                        <!-- Reject Button -->
+                        <button type="submit" name="action" value="reject" class="btn btn-danger btn-lg"
+                                title="Cancel and go back to the generator">
+                            <i class="fas fa-times"></i> Reject & Start Over
+                        </button>
+
+                        <!-- Edit Button -->
+                        <a href="{{ url_for('teacher_dashboard') }}" class="btn btn-secondary btn-lg ml-auto">
+                            <i class="fas fa-arrow-left"></i> Back to Dashboard
+                        </a>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Quality Report (Optional) -->
+            <div class="card shadow-lg border-0 mb-4">
+                <div class="card-header bg-light border-bottom">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-alt"></i> Quality Assessment Report
+                    </h5>
+                </div>
+
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="font-weight-bold mb-3">✓ What We Checked</h6>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success"></i> 
+                                    Question quality and relevance
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success"></i> 
+                                    No duplicate or repetitive questions
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success"></i> 
+                                    Consistency with topic and difficulty
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success"></i> 
+                                    Proper formatting and clarity
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success"></i> 
+                                    MCQ options are distinct and plausible
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h6 class="font-weight-bold mb-3">📝 Recommendations</h6>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="fas fa-lightbulb text-warning"></i>
+                                    Questions span the full difficulty range
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-lightbulb text-warning"></i>
+                                    Mix of question types is well-balanced
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-lightbulb text-warning"></i>
+                                    Time limit allows adequate thinking time per question
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .gap-2 {
+        gap: 10px;
+    }
+    
+    .question-card {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+    }
+    
+    .question-text {
+        font-size: 16px;
+        line-height: 1.6;
+    }
+    
+    .options-container {
+        background: white;
+        padding: 15px;
+        border-radius: 5px;
+    }
+    
+    .custom-control-label {
+        padding-top: 0.25rem;
+        cursor: pointer;
+    }
+    
+    .badge-lg {
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+    }
+
+    @media (max-width: 768px) {
+        .btn-lg {
+            font-size: 0.9rem;
+            padding: 0.5rem 1rem;
+        }
+    }
+</style>
+
+<script>
+    // Disable form submission while action is processing
+    document.querySelectorAll('form button[type="submit"]').forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Show loading state
+            const originalHtml = this.innerHTML;
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            
+            // Re-enable after a delay if there's an error
+            setTimeout(() => {
+                this.disabled = false;
+                this.innerHTML = originalHtml;
+            }, 5000);
+        });
+    });
+</script>
+{% endblock %}

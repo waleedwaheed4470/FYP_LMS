@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}Instant Quiz Generator - LMS{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <!-- Generate Quiz Form -->
+            <div class="card shadow-lg mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-magic"></i> Quick Quiz Generator with AI
+                    </h3>
+                    <small>Generate professional quizzes instantly using Groq AI</small>
+                </div>
+
+                <div class="card-body">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for cat, msg in messages %}
+                                <div class="alert alert-{{ cat }} alert-dismissible fade show" role="alert">
+                                    <i class="fas fa-{{ 'check-circle' if cat == 'success' else 'exclamation-circle' }}"></i>
+                                    {{ msg }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form id="generate_quiz_form" method="POST" action="{{ url_for('generate_quiz_ai') }}">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="title" class="font-weight-bold">
+                                        <i class="fas fa-heading"></i> Quiz Title *
+                                    </label>
+                                    <input type="text" class="form-control" id="title" name="title" 
+                                           placeholder="e.g., Chapter 5 Quiz" required>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="subject" class="font-weight-bold">
+                                        <i class="fas fa-book"></i> Subject *
+                                    </label>
+                                    <select class="form-control" id="subject" name="subject" required>
+                                        <option value="">-- Select Subject --</option>
+                                        <option value="Mathematics">Mathematics</option>
+                                        <option value="Science">Science</option>
+                                        <option value="History">History</option>
+                                        <option value="Literature">Literature</option>
+                                        <option value="Computer Science">Computer Science</option>
+                                        <option value="Physics">Physics</option>
+                                        <option value="Chemistry">Chemistry</option>
+                                        <option value="Biology">Biology</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="description" class="font-weight-bold">
+                                <i class="fas fa-align-left"></i> Topic/Description *
+                            </label>
+                            <textarea class="form-control" id="description" name="description" 
+                                    rows="3" placeholder="Describe the topic for the quiz (e.g., 'Photosynthesis and cellular respiration')" required></textarea>
+                            <small class="text-muted">The more detail, the better the questions!</small>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="quiz_type" class="font-weight-bold">
+                                        <i class="fas fa-question-circle"></i> Quiz Type *
+                                    </label>
+                                    <select class="form-control" id="quiz_type" name="quiz_type" required>
+                                        <option value="mcq" selected>Multiple Choice Questions</option>
+                                        <option value="essay">Essay Questions</option>
+                                        <option value="mixed">Mixed (MCQ + Essay)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="difficulty" class="font-weight-bold">
+                                        <i class="fas fa-chart-bar"></i> Difficulty *
+                                    </label>
+                                    <select class="form-control" id="difficulty" name="difficulty" required>
+                                        <option value="easy">Easy</option>
+                                        <option value="medium" selected>Medium</option>
+                                        <option value="hard">Hard</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="num_questions" class="font-weight-bold">
+                                        <i class="fas fa-list-ol"></i> Number of Questions *
+                                    </label>
+                                    <input type="number" class="form-control" id="num_questions" name="num_questions" 
+                                           value="5" min="3" max="20" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="time_limit_minutes" class="font-weight-bold">
+                                        <i class="fas fa-hourglass"></i> Time Limit (minutes)
+                                    </label>
+                                    <input type="number" class="form-control" id="time_limit_minutes" 
+                                           name="time_limit_minutes" value="30" min="5" max="180">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="passing_percentage" class="font-weight-bold">
+                                        <i class="fas fa-percent"></i> Passing Percentage
+                                    </label>
+                                    <input type="number" class="form-control" id="passing_percentage" 
+                                           name="passing_percentage" value="40" min="0" max="100">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="font-weight-bold">
+                                <i class="fas fa-info-circle"></i> Options
+                            </label>
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input" id="auto_publish" name="auto_publish">
+                                <label class="custom-control-label" for="auto_publish">
+                                    Skip review and publish immediately (if quality is good)
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-actions mt-4 pt-3 border-top">
+                            <button type="submit" class="btn btn-success btn-lg" id="generate_btn">
+                                <i class="fas fa-wand-magic-sparkles"></i> Generate Quiz with AI
+                            </button>
+                            <a href="{{ url_for('teacher_dashboard') }}" class="btn btn-secondary btn-lg ml-2">
+                                <i class="fas fa-arrow-left"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Quick Info -->
+            <div class="alert alert-info" role="alert">
+                <h5 class="alert-heading"><i class="fas fa-lightbulb"></i> How It Works</h5>
+                <ol class="mb-0">
+                    <li>Fill in the quiz details and topic description</li>
+                    <li>Click "Generate Quiz with AI" - Groq will create professional questions</li>
+                    <li>Review the generated questions on the next screen</li>
+                    <li>Approve or regenerate the quiz</li>
+                    <li>Once approved, the quiz is published and ready for students</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('generate_quiz_form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const generateBtn = document.getElementById('generate_btn');
+        generateBtn.disabled = true;
+        generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating Quiz...';
+        
+        // Validate form first
+        if (!this.checkValidity()) {
+            e.stopPropagation();
+            generateBtn.disabled = false;
+            generateBtn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Generate Quiz with AI';
+            return false;
+        }
+        
+        // Submit the form
+        this.submit();
+    });
+</script>
+
+<style>
+    .form-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-start;
+    }
+    
+    .card-header small {
+        display: block;
+        opacity: 0.9;
+        margin-top: 5px;
+    }
+</style>
+{% endblock %}

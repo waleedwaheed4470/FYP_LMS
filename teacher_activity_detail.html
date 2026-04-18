@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Activity Detail{% endblock %}
+{% block content %}
+<div class="container">
+  <a class="btn" href="{{ url_for('teacher_dashboard') }}">← Back</a>
+  <h1 class="page-title">{{ activity.title }}</h1>
+  <div class="muted">Type: {{ activity.type|capitalize }} • Created by {{ activity.created_by_name }}</div>
+  <div style="margin-top:8px;">
+    <a class="btn btn-secondary" href="{{ url_for('teacher_activity_edit', activity_id=activity.id) }}">Edit Activity</a>
+  </div>
+  {% if activity.due_date %}
+    <div class="muted">Due: {{ activity.due_date.strftime('%Y-%m-%d %H:%M') if activity.due_date.strftime is defined else activity.due_date }}</div>
+  {% endif %}
+  <p>{{ activity.description }}</p>
+  {% if activity.attachments and activity.attachments|length > 0 %}
+    <div class="materials">
+      <h3>Materials</h3>
+      <ul class="list">
+        {% for att in activity.attachments %}
+          <li>
+            <a href="{{ att.url }}" target="_blank">
+              <i class="fas fa-file"></i> {{ att.name }}
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <hr />
+  <h2>Submissions</h2>
+  {% if submissions and submissions|length > 0 %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Student</th>
+          <th>Email</th>
+          <th>Submitted At</th>
+          <th>File</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in submissions %}
+          <tr>
+            <td>{{ s.student_name }}</td>
+            <td>{{ s.student_email }}</td>
+            <td>{{ s.submitted_at }}</td>
+            <td><a href="{{ s.file_url }}" target="_blank">{{ s.file_name }}</a></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="muted">No submissions yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

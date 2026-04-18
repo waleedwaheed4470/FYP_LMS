@@ -1,0 +1,737 @@
+{% extends "base.html" %}
+
+{% block title %}Create Assignment or Quiz - LMS{% endblock %}
+
+{% block content %}
+<style>
+/* ============================================================
+   ASSIGNMENT/QUIZ CREATION FORM - PROFESSIONAL STYLING
+   ============================================================ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary: #1e40af;
+    --primary-light: #3b82f6;
+    --primary-dark: #1e3a8a;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --light: #f8fafc;
+    --dark: #1e293b;
+    --gray: #64748b;
+    --border: #e2e8f0;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+    --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.activity-container {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+/* Header */
+.activity-header {
+    background: white;
+    border-radius: 12px;
+    padding: 40px;
+    margin-bottom: 30px;
+    box-shadow: var(--shadow-md);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.activity-header-content h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--dark);
+    margin-bottom: 8px;
+}
+
+.activity-header-content p {
+    font-size: 14px;
+    color: var(--gray);
+}
+
+.back-btn {
+    background: var(--light);
+    border: 2px solid var(--border);
+    color: var(--primary);
+    padding: 10px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.back-btn:hover {
+    background: var(--primary);
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* Main Form Container */
+.activity-form-wrapper {
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+}
+
+/* Type Selector */
+.type-selector {
+    padding: 40px;
+    border-bottom: 2px solid var(--border);
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.type-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.type-header h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--dark);
+}
+
+.type-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.type-option {
+    position: relative;
+}
+
+.type-option input[type="radio"] {
+    display: none;
+}
+
+.type-option label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    background: white;
+    transition: all 0.3s;
+    font-weight: 600;
+}
+
+.type-option input[type="radio"]:checked + label {
+    border-color: var(--primary);
+    background: #dbeafe;
+    color: var(--primary);
+}
+
+.type-option label:hover {
+    border-color: var(--primary);
+}
+
+.type-option i {
+    font-size: 20px;
+}
+
+/* Form Section */
+.form-section {
+    padding: 40px;
+    border-bottom: 1px solid var(--border);
+}
+
+.form-section:last-child {
+    border-bottom: none;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--primary);
+}
+
+.section-header h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--dark);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.section-header i {
+    font-size: 24px;
+    color: var(--primary);
+}
+
+/* Form Grid */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.form-grid.full {
+    grid-template-columns: 1fr;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--dark);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.form-group label i {
+    color: var(--primary);
+    font-size: 14px;
+}
+
+.required {
+    color: var(--danger);
+    font-weight: 700;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    padding: 12px 14px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    transition: all 0.3s;
+    background: white;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 120px;
+}
+
+.form-hint {
+    font-size: 11px;
+    color: var(--gray);
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.form-hint i {
+    color: var(--warning);
+}
+
+/* File Upload Section */
+.file-upload-area {
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 30px;
+    text-align: center;
+    background: var(--light);
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.file-upload-area:hover {
+    border-color: var(--primary);
+    background: #dbeafe;
+}
+
+.file-upload-area.drag-over {
+    border-color: var(--primary);
+    background: #dbeafe;
+}
+
+.file-upload-area i {
+    font-size: 32px;
+    color: var(--primary);
+    margin-bottom: 10px;
+}
+
+.file-upload-area p {
+    color: var(--gray);
+    font-size: 13px;
+    margin: 10px 0 0 0;
+}
+
+.file-upload-area input {
+    display: none;
+}
+
+/* File List */
+.file-list {
+    margin-top: 20px;
+}
+
+.file-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--light);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.file-item-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.file-item i {
+    font-size: 18px;
+    color: var(--primary);
+}
+
+.file-item-details {
+    text-align: left;
+}
+
+.file-item-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--dark);
+}
+
+.file-item-size {
+    font-size: 11px;
+    color: var(--gray);
+}
+
+.file-item-remove {
+    background: var(--danger);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 11px;
+    transition: all 0.3s;
+}
+
+.file-item-remove:hover {
+    background: #dc2626;
+}
+
+/* Button Group */
+.button-group {
+    display: flex;
+    gap: 12px;
+    margin-top: 30px;
+    justify-content: flex-end;
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s;
+    text-decoration: none;
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--primary-dark);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-secondary {
+    background: var(--light);
+    color: var(--dark);
+    border: 2px solid var(--border);
+}
+
+.btn-secondary:hover {
+    background: var(--border);
+}
+
+/* Hidden sections */
+.hidden {
+    display: none;
+}
+
+/* Alert */
+.alert {
+    padding: 16px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.alert i {
+    font-size: 18px;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.alert-info {
+    background: #dbeafe;
+    color: #1e40af;
+    border-left: 4px solid var(--primary);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .activity-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 20px;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .button-group {
+        flex-direction: column;
+    }
+
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .type-options {
+        grid-template-columns: 1fr;
+    }
+
+    .file-upload-area {
+        padding: 20px;
+    }
+}
+</style>
+
+<div class="activity-container">
+    <!-- Header -->
+    <div class="activity-header">
+        <div class="activity-header-content">
+            <h1>Create Activity</h1>
+            <p>Create assignments or quizzes for your students</p>
+        </div>
+        <a href="{{ url_for('teacher_dashboard') }}" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Back
+        </a>
+    </div>
+
+    <!-- Activity Creation Form -->
+    <div class="activity-form-wrapper">
+        <form id="activityForm" method="POST" action="{{ url_for('teacher_new_activity') }}" enctype="multipart/form-data">
+            
+            <!-- Type Selection -->
+            <div class="type-selector">
+                <div class="type-header">
+                    <h2><i class="fas fa-list-check"></i> Activity Type</h2>
+                </div>
+                <div class="type-options">
+                    <div class="type-option">
+                        <input type="radio" id="type-assignment" name="type" value="assignment" checked>
+                        <label for="type-assignment">
+                            <i class="fas fa-clipboard"></i> Assignment
+                        </label>
+                    </div>
+                    <div class="type-option">
+                        <input type="radio" id="type-quiz" name="type" value="quiz" onchange="toggleQuizFields()">
+                        <label for="type-quiz">
+                            <i class="fas fa-question-circle"></i> Quiz
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Basic Information -->
+            <div class="form-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-info-circle"></i> Basic Information</h2>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="title">
+                            <i class="fas fa-heading"></i> Title <span class="required">*</span>
+                        </label>
+                        <input type="text" id="title" name="title" placeholder="e.g., Chapter 1 Assessment" required>
+                        <span class="form-hint">Give your activity a clear, descriptive title</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="subject_name">
+                            <i class="fas fa-book"></i> Subject <span class="required">*</span>
+                        </label>
+                        <select id="subject_name" name="subject_name" required>
+                            <option value="">-- Select Subject --</option>
+                            <option value="Biology">Biology</option>
+                            <option value="Chemistry">Chemistry</option>
+                            <option value="Physics">Physics</option>
+                            <option value="Mathematics">Mathematics</option>
+                            <option value="English">English</option>
+                            <option value="History">History</option>
+                            <option value="Geography">Geography</option>
+                            <option value="Computer Science">Computer Science</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-grid full">
+                    <div class="form-group">
+                        <label for="topic">
+                            <i class="fas fa-lightbulb"></i> Topic/Chapter <span class="required">*</span>
+                        </label>
+                        <input type="text" id="topic" name="topic" placeholder="e.g., Photosynthesis, Algebra, World War I" required>
+                        <span class="form-hint">Specify the topic or chapter this activity covers</span>
+                    </div>
+                </div>
+
+                <div class="form-grid full">
+                    <div class="form-group">
+                        <label for="description">
+                            <i class="fas fa-align-left"></i> Description/Instructions <span class="required">*</span>
+                        </label>
+                        <textarea id="description" name="description" placeholder="Describe the assignment details, instructions, grading criteria, etc." required></textarea>
+                        <span class="form-hint">Clear instructions help students understand expectations</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Deadline & Points -->
+            <div class="form-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-calendar-alt"></i> Schedule & Grading</h2>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="due_date">
+                            <i class="fas fa-hourglass-end"></i> Due Date <span class="required">*</span>
+                        </label>
+                        <input type="datetime-local" id="due_date" name="due_date" required>
+                        <span class="form-hint">When students should submit</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="total_points">
+                            <i class="fas fa-star"></i> Total Points
+                        </label>
+                        <input type="number" id="total_points" name="total_points" value="100" min="1" max="1000">
+                        <span class="form-hint">Maximum points for this activity</span>
+                    </div>
+
+                    <div class="form-group hidden" id="quiz-number-group">
+                        <label for="quiz_number">
+                            <i class="fas fa-hashtag"></i> Quiz Number
+                        </label>
+                        <input type="number" id="quiz_number" name="quiz_number" placeholder="e.g., 01" min="1">
+                        <span class="form-hint">Sequential quiz number</span>
+                    </div>
+
+                    <div class="form-group hidden" id="quiz-time-group">
+                        <label for="quiz_time_minutes">
+                            <i class="fas fa-clock"></i> Time Limit (minutes)
+                        </label>
+                        <input type="number" id="quiz_time_minutes" name="quiz_time_minutes" value="30" min="5" max="180">
+                        <span class="form-hint">Time allowed to complete the quiz</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Materials Upload -->
+            <div class="form-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-file-upload"></i> Materials & Resources</h2>
+                </div>
+
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <div>
+                        <strong>Upload Reference Materials</strong><br>
+                        Students can download these materials while working on the assignment (like Google Classroom).
+                        Supports: PDF, DOC, DOCX
+                    </div>
+                </div>
+
+                <div class="form-grid full">
+                    <div class="file-upload-area" id="fileUploadArea" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p><strong>Drag files here or click to browse</strong></p>
+                        <p style="margin-top: 5px; font-size: 12px;">PDF, DOC, or DOCX files only</p>
+                        <input type="file" id="attachments" name="attachments" accept=".pdf,.doc,.docx" multiple onchange="handleFileSelect(event)">
+                    </div>
+                </div>
+
+                <div id="fileList" class="file-list"></div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-section" style="background: var(--light);">
+                <div class="button-group">
+                    <a href="{{ url_for('teacher_dashboard') }}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Create Activity
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+let uploadedFiles = [];
+
+function toggleQuizFields() {
+    const isQuiz = document.getElementById('type-quiz').checked;
+    document.getElementById('quiz-number-group').classList.toggle('hidden', !isQuiz);
+    document.getElementById('quiz-time-group').classList.toggle('hidden', !isQuiz);
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    document.getElementById('fileUploadArea').classList.add('drag-over');
+}
+
+function handleDragLeave(e) {
+    e.preventDefault();
+    document.getElementById('fileUploadArea').classList.remove('drag-over');
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    document.getElementById('fileUploadArea').classList.remove('drag-over');
+    const files = e.dataTransfer.files;
+    handleFiles(files);
+}
+
+function handleFileSelect(e) {
+    const files = e.target.files;
+    handleFiles(files);
+}
+
+function handleFiles(files) {
+    for (let file of files) {
+        if (['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(file.type)) {
+            uploadedFiles.push(file);
+        }
+    }
+    renderFileList();
+}
+
+function renderFileList() {
+    const fileList = document.getElementById('fileList');
+    fileList.innerHTML = '';
+    
+    uploadedFiles.forEach((file, index) => {
+        const fileType = file.name.split('.').pop().toUpperCase();
+        const fileSize = (file.size / 1024).toFixed(2);
+        
+        const fileHTML = `
+            <div class="file-item">
+                <div class="file-item-info">
+                    <i class="fas fa-file" style="color: ${getFileColor(fileType)}"></i>
+                    <div class="file-item-details">
+                        <div class="file-item-name">${file.name}</div>
+                        <div class="file-item-size">${fileSize} KB</div>
+                    </div>
+                </div>
+                <button type="button" class="file-item-remove" onclick="removeFile(${index})">
+                    <i class="fas fa-trash"></i> Remove
+                </button>
+            </div>
+        `;
+        fileList.insertAdjacentHTML('beforeend', fileHTML);
+    });
+}
+
+function removeFile(index) {
+    uploadedFiles.splice(index, 1);
+    renderFileList();
+}
+
+function getFileColor(ext) {
+    const colors = { 'PDF': '#ef4444', 'DOC': '#3b82f6', 'DOCX': '#3b82f6' };
+    return colors[ext] || '#64748b';
+}
+
+// Update file input when files are added/removed
+document.getElementById('activityForm').addEventListener('submit', function(e) {
+    if (uploadedFiles.length === 0) {
+        document.getElementById('attachments').required = false;
+    }
+});
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('fileUploadArea').addEventListener('click', function() {
+        document.getElementById('attachments').click();
+    });
+});
+</script>
+{% endblock %}

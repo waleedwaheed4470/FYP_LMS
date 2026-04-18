@@ -1,0 +1,350 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Activity Logs - Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-header">
+        <div class="header-content">
+            <h1><i class="fas fa-history"></i> Admin Activity Logs</h1>
+            <p>Track all administrative actions and system changes</p>
+        </div>
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-container">
+        <h3>Filter Logs</h3>
+        <form method="GET" class="filters-form">
+            <div class="filter-group">
+                <label for="actionFilter">Action Type:</label>
+                <select id="actionFilter" name="action" class="filter-select">
+                    <option value="">All Actions</option>
+                    <option value="user_created">User Created</option>
+                    <option value="user_deleted">User Deleted</option>
+                    <option value="user_role_changed">Role Changed</option>
+                    <option value="user_banned">User Banned</option>
+                    <option value="user_unbanned">User Unbanned</option>
+                    <option value="settings_changed">Settings Changed</option>
+                    <option value="dashboard_access">Dashboard Access</option>
+                    <option value="report_generated">Report Generated</option>
+                    <option value="analytics_viewed">Analytics Viewed</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="daysFilter">Time Period:</label>
+                <select id="daysFilter" name="days" class="filter-select">
+                    <option value="1">Last 24 Hours</option>
+                    <option value="7" selected>Last 7 Days</option>
+                    <option value="30">Last 30 Days</option>
+                    <option value="90">Last 90 Days</option>
+                    <option value="365">Last Year</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Apply Filters</button>
+            <a href="{{ url_for('admin_logs') }}" class="btn btn-secondary">Reset</a>
+        </form>
+    </div>
+
+    <!-- Activity Log Table -->
+    <div class="logs-container">
+        {% if logs %}
+            <table class="logs-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Admin</th>
+                        <th>Action</th>
+                        <th>Description</th>
+                        <th>Target</th>
+                        <th>IP Address</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr class="log-row" data-action="{{ log.action_type }}">
+                        <td class="timestamp">{{ log.timestamp }}</td>
+                        <td class="admin">
+                            <span class="admin-id">{{ log.admin_id[:8] }}...</span>
+                        </td>
+                        <td class="action">
+                            <span class="action-badge action-{{ log.action_type }}">
+                                {{ log.action_type.replace('_', ' ').title() }}
+                            </span>
+                        </td>
+                        <td class="description">{{ log.description }}</td>
+                        <td class="target">{{ log.target_id if log.target_id else '-' }}</td>
+                        <td class="ip">{{ log.ip_address }}</td>
+                        <td class="details-col">
+                            {% if log.details %}
+                                <button class="btn btn-small btn-info" onclick="showDetails('{{ log.id }}')">
+                                    <i class="fas fa-info-circle"></i>
+                                </button>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="no-logs">
+                <i class="fas fa-inbox"></i>
+                <p>No admin activities found for the selected filters</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.admin-container {
+    padding: 30px;
+    background: #f8f9fa;
+    min-height: 100vh;
+}
+
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.header-content h1 {
+    margin: 0 0 5px 0;
+    background: linear-gradient(135deg, #1e40af, #7c3aed);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.filters-container {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.filters-container h3 {
+    color: #1e40af;
+    margin-top: 0;
+}
+
+.filters-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    align-items: flex-end;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-group label {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+
+.filter-select {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.logs-container {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.logs-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: auto;
+}
+
+.logs-table thead {
+    background: #f1f5f9;
+    border-bottom: 2px solid #ddd;
+}
+
+.logs-table th {
+    padding: 12px 15px;
+    text-align: left;
+    font-weight: 600;
+    color: #333;
+    font-size: 13px;
+    text-transform: uppercase;
+}
+
+.logs-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+    font-size: 13px;
+}
+
+.logs-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.timestamp {
+    color: #666;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+}
+
+.admin {
+    color: #1e40af;
+    font-weight: 500;
+}
+
+.action-badge {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.action-badge.action-user_deleted,
+.action-badge.action-user_banned {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.action-badge.action-user_created,
+.action-badge.action-user_unbanned {
+    background: #d1fae5;
+    color: #047857;
+}
+
+.action-badge.action-user_role_changed,
+.action-badge.action-settings_changed {
+    background: #fed7aa;
+    color: #9a3412;
+}
+
+.action-badge.action-dashboard_access,
+.action-badge.action-analytics_viewed {
+    background: #e0e7ff;
+    color: #3730a3;
+}
+
+.description {
+    color: #333;
+}
+
+.target {
+    color: #666;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+}
+
+.ip {
+    color: #999;
+    font-size: 12px;
+}
+
+.details-col {
+    text-align: center;
+}
+
+.no-logs {
+    padding: 60px 20px;
+    text-align: center;
+    color: #999;
+}
+
+.no-logs i {
+    font-size: 48px;
+    margin-bottom: 15px;
+    display: block;
+    color: #ddd;
+}
+
+.btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+.btn-primary {
+    background: #1e40af;
+    color: white;
+    padding: 10px 20px;
+}
+
+.btn-primary:hover {
+    background: #1e3a8a;
+}
+
+.btn-secondary {
+    background: #6b7280;
+    color: white;
+    padding: 10px 20px;
+}
+
+.btn-secondary:hover {
+    background: #4b5563;
+}
+
+.btn-small {
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+.btn-info {
+    background: #1e40af;
+    color: white;
+}
+
+.btn-info:hover {
+    background: #1e3a8a;
+}
+
+@media (max-width: 1024px) {
+    .logs-table {
+        font-size: 12px;
+    }
+    
+    .logs-table th,
+    .logs-table td {
+        padding: 8px 10px;
+    }
+}
+
+@media (max-width: 768px) {
+    .logs-table {
+        overflow-x: auto;
+        display: block;
+    }
+}
+</style>
+
+<script>
+function showDetails(logId) {
+    alert('Details for log ' + logId + ' would be displayed here');
+}
+</script>
+{% endblock %}

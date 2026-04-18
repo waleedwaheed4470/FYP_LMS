@@ -1,0 +1,631 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Proctoring Monitoring Dashboard{% endblock %}
+
+{% block content %}
+<style>
+.admin-monitoring-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+    padding: 20px;
+    background: #f5f6fa;
+}
+
+.monitoring-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.monitoring-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.stat-card {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-left: 4px solid #3498db;
+}
+
+.stat-card.critical {
+    border-left-color: #e74c3c;
+    background: #fdeaea;
+}
+
+.stat-card.warning {
+    border-left-color: #f39c12;
+    background: #fef5e7;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #7f8c8d;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+.stat-value {
+    font-size: 28px;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.students-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 20px;
+}
+
+.student-monitor-card {
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: box-shadow 0.3s;
+}
+
+.student-monitor-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.student-monitor-card.critical {
+    border-top: 5px solid #e74c3c;
+}
+
+.student-monitor-card.warning {
+    border-top: 5px solid #f39c12;
+}
+
+.student-monitor-card.normal {
+    border-top: 5px solid #27ae60;
+}
+
+.monitor-card-header {
+    background: #f8f9fa;
+    padding: 15px;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.student-name {
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 4px;
+}
+
+.quiz-title {
+    font-size: 12px;
+    color: #7f8c8d;
+}
+
+.monitor-card-body {
+    padding: 15px;
+}
+
+.suspicion-score-container {
+    margin-bottom: 15px;
+}
+
+.suspicion-score-bar {
+    width: 100%;
+    height: 24px;
+    background: #ecf0f1;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 8px;
+}
+
+.suspicion-score-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #27ae60 0%, #f39c12 50%, #e74c3c 100%);
+    transition: width 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 12px;
+}
+
+.activity-violations {
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+}
+
+.violation-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-size: 12px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.violation-item:last-child {
+    border-bottom: none;
+}
+
+.violation-type {
+    color: #2c3e50;
+    font-weight: 500;
+}
+
+.violation-count {
+    color: #e74c3c;
+    font-weight: bold;
+}
+
+.camera-status {
+    font-size: 11px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    background: #e8f8f5;
+    color: #27ae60;
+    margin-bottom: 10px;
+}
+
+.camera-status.offline {
+    background: #fadbd8;
+    color: #e74c3c;
+}
+
+.timeline-item {
+    padding: 8px;
+    border-left: 3px solid #bdc3c7;
+    margin-bottom: 8px;
+    font-size: 11px;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.timeline-item.critical {
+    border-left-color: #e74c3c;
+    background: #fadbd8;
+}
+
+.timeline-item.warning {
+    border-left-color: #f39c12;
+    background: #fef5e7;
+}
+
+.timeline-time {
+    color: #7f8c8d;
+    font-weight: bold;
+    margin-bottom: 2px;
+}
+
+.timeline-text {
+    color: #2c3e50;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 15px;
+}
+
+.btn-small {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.btn-flag {
+    background: #f39c12;
+    color: white;
+}
+
+.btn-flag:hover {
+    background: #e67e22;
+}
+
+.btn-lock {
+    background: #e74c3c;
+    color: white;
+}
+
+.btn-lock:hover {
+    background: #c0392b;
+}
+
+.btn-view {
+    background: #3498db;
+    color: white;
+}
+
+.btn-view:hover {
+    background: #2980b9;
+}
+
+.session-timer {
+    font-size: 12px;
+    color: #7f8c8d;
+    font-weight: bold;
+}
+
+.alert-banner {
+    background: #fadbd8;
+    border-left: 4px solid #e74c3c;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+}
+
+.alert-banner.warning {
+    background: #fef5e7;
+    border-left-color: #f39c12;
+}
+
+.alert-title {
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 5px;
+}
+
+.alert-message {
+    color: #555;
+    font-size: 13px;
+}
+
+@media (max-width: 768px) {
+    .students-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .monitoring-stats {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+</style>
+
+<div class="admin-monitoring-container">
+    <!-- Header -->
+    <div class="monitoring-header">
+        <div>
+            <h1>Proctoring Monitoring Dashboard</h1>
+            <p style="color: #7f8c8d; margin-top: 5px;">Real-time student monitoring during quiz proctoring</p>
+        </div>
+        <div style="text-align: right;">
+            <button class="btn btn-primary" onclick="refreshDashboard()">
+                <i class="fas fa-sync"></i> Refresh
+            </button>
+        </div>
+    </div>
+    
+    <!-- Global Statistics -->
+    <div class="monitoring-stats">
+        <div class="stat-card">
+            <div class="stat-label">Active Sessions</div>
+            <div class="stat-value" id="activeSessionsCount">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Critical Alerts</div>
+            <div class="stat-value critical" id="criticalAlertsCount">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Warnings</div>
+            <div class="stat-value warning" id="warningsCount">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Normal Sessions</div>
+            <div class="stat-value" id="normalSessionsCount">0</div>
+        </div>
+    </div>
+    
+    <!-- Critical Alerts Section -->
+    <div id="criticalAlertsContainer"></div>
+    
+    <!-- Students Grid -->
+    <div>
+        <h2 style="margin-bottom: 15px;"><i class="fas fa-video"></i> Active Monitoring</h2>
+        <div class="students-grid" id="studentsGrid">
+            <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #7f8c8d;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 32px; margin-bottom: 15px;"></i>
+                <p>Loading student sessions...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Simulated student monitoring data
+const mockStudentSessions = [
+    {
+        student_id: 'STU001',
+        student_name: 'Ahmed Ali',
+        quiz_id: 'QUIZ101',
+        quiz_title: 'Advanced Biology - Final Exam',
+        session_status: 'critical',
+        suspicion_score: 75,
+        time_elapsed_seconds: 1245,
+        faces_detected: 0,
+        multiple_faces_detected: 4,
+        head_turns: 12,
+        looking_away: 8,
+        tab_switches: 5,
+        copy_paste_attempts: 2,
+        devtools_opened: true,
+        camera_active: true,
+        activity_timeline: [
+            { time: '14:22:15', type: 'multiple_faces_detected', severity: 'critical' },
+            { time: '14:22:45', type: 'copy_paste_attempt', severity: 'high' },
+            { time: '14:23:20', type: 'severe_head_turn', severity: 'high' },
+            { time: '14:24:10', type: 'devtools_opened', severity: 'critical' },
+            { time: '14:25:30', type: 'tab_switch', severity: 'warning' }
+        ],
+        warnings_issued: 2,
+        flag_for_review: true
+    },
+    {
+        student_id: 'STU002',
+        student_name: 'Fatima Hassan',
+        quiz_id: 'QUIZ101',
+        quiz_title: 'Advanced Biology - Final Exam',
+        session_status: 'warning',
+        suspicion_score: 45,
+        time_elapsed_seconds: 1820,
+        faces_detected: 35,
+        multiple_faces_detected: 0,
+        head_turns: 3,
+        looking_away: 2,
+        tab_switches: 2,
+        copy_paste_attempts: 0,
+        devtools_opened: false,
+        camera_active: true,
+        activity_timeline: [
+            { time: '14:18:30', type: 'head_turn', severity: 'warning' },
+            { time: '14:20:15', type: 'looking_away', severity: 'medium' },
+            { time: '14:23:45', type: 'head_turn', severity: 'warning' },
+            { time: '14:25:20', type: 'window_blur', severity: 'low' }
+        ],
+        warnings_issued: 1,
+        flag_for_review: false
+    },
+    {
+        student_id: 'STU003',
+        student_name: 'Mohammed Karim',
+        quiz_id: 'QUIZ101',
+        quiz_title: 'Advanced Biology - Final Exam',
+        session_status: 'normal',
+        suspicion_score: 12,
+        time_elapsed_seconds: 2150,
+        faces_detected: 142,
+        multiple_faces_detected: 0,
+        head_turns: 0,
+        looking_away: 0,
+        tab_switches: 0,
+        copy_paste_attempts: 0,
+        devtools_opened: false,
+        camera_active: true,
+        activity_timeline: [
+            { time: '14:10:20', type: 'quiz_started', severity: 'info' },
+            { time: '14:15:45', type: 'question_answered', severity: 'info' }
+        ],
+        warnings_issued: 0,
+        flag_for_review: false
+    }
+];
+
+function formatTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
+
+function getRiskColor(score) {
+    if (score >= 60) return '#e74c3c';
+    if (score >= 30) return '#f39c12';
+    return '#27ae60';
+}
+
+function getRiskLevel(score) {
+    if (score >= 60) return 'critical';
+    if (score >= 30) return 'warning';
+    return 'normal';
+}
+
+function createStudentCard(session) {
+    const riskLevel = getRiskLevel(session.suspicion_score);
+    const riskColor = getRiskColor(session.suspicion_score);
+    
+    const card = document.createElement('div');
+    card.className = `student-monitor-card ${riskLevel}`;
+    
+    const activityHtml = `
+        <div class="activity-violations">
+            ${session.multiple_faces_detected > 0 ? `
+                <div class="violation-item">
+                    <span class="violation-type"><i class="fas fa-faces"></i> Multiple Faces</span>
+                    <span class="violation-count">${session.multiple_faces_detected}</span>
+                </div>
+            ` : ''}
+            ${session.head_turns > 0 ? `
+                <div class="violation-item">
+                    <span class="violation-type"><i class="fas fa-head-side-virus"></i> Head Turns</span>
+                    <span class="violation-count">${session.head_turns}</span>
+                </div>
+            ` : ''}
+            ${session.looking_away > 0 ? `
+                <div class="violation-item">
+                    <span class="violation-type"><i class="fas fa-eye-slash"></i> Looking Away</span>
+                    <span class="violation-count">${session.looking_away}</span>
+                </div>
+            ` : ''}
+            ${session.tab_switches > 0 ? `
+                <div class="violation-item">
+                    <span class="violation-type"><i class="fas fa-window-restore"></i> Tab Switches</span>
+                    <span class="violation-count">${session.tab_switches}</span>
+                </div>
+            ` : ''}
+            ${session.copy_paste_attempts > 0 ? `
+                <div class="violation-item">
+                    <span class="violation-type"><i class="fas fa-copy"></i> Copy/Paste</span>
+                    <span class="violation-count">${session.copy_paste_attempts}</span>
+                </div>
+            ` : ''}
+            ${session.devtools_opened ? `
+                <div class="violation-item">
+                    <span class="violation-type"><i class="fas fa-terminal"></i> DevTools</span>
+                    <span class="violation-count">Yes</span>
+                </div>
+            ` : ''}
+        </div>
+    `;
+    
+    const timelineHtml = session.activity_timeline.slice(-3).reverse().map(item => `
+        <div class="timeline-item ${item.severity === 'critical' ? 'critical' : item.severity === 'high' || item.severity === 'warning' ? 'warning' : ''}">
+            <div class="timeline-time">${item.time}</div>
+            <div class="timeline-text">${item.type.replace(/_/g, ' ')}</div>
+        </div>
+    `).join('');
+    
+    card.innerHTML = `
+        <div class="monitor-card-header">
+            <div>
+                <div class="student-name">${session.student_name}</div>
+                <div class="quiz-title">${session.quiz_title}</div>
+            </div>
+            <div class="session-timer">${formatTime(session.time_elapsed_seconds)}</div>
+        </div>
+        <div class="monitor-card-body">
+            <div class="camera-status ${!session.camera_active ? 'offline' : ''}">
+                <i class="fas ${session.camera_active ? 'fa-camera' : 'fa-camera-slash'}"></i>
+                ${session.camera_active ? 'Camera Active' : 'Camera Offline'}
+            </div>
+            
+            <div class="suspicion-score-container">
+                <label style="font-size: 12px; color: #7f8c8d; font-weight: bold;">
+                    Suspicion Score
+                </label>
+                <div class="suspicion-score-bar">
+                    <div class="suspicion-score-fill" style="width: ${Math.min(100, session.suspicion_score)}%; background: linear-gradient(90deg, #27ae60 0%, #f39c12 50%, #e74c3c 100%);">
+                        ${session.suspicion_score}/100
+                    </div>
+                </div>
+            </div>
+            
+            ${session.suspicion_score >= 30 ? `
+                <div style="background: #fef5e7; padding: 8px; border-radius: 4px; margin-bottom: 10px; font-size: 11px; color: #c0392b;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    ${session.suspicion_score >= 60 ? 'CRITICAL - Immediate action required' : 'WARNING - Monitor closely'}
+                </div>
+            ` : ''}
+            
+            ${activityHtml}
+            
+            <label style="font-size: 12px; color: #7f8c8d; font-weight: bold;">Recent Activity</label>
+            <div style="margin-top: 8px;">
+                ${timelineHtml || '<p style="color: #7f8c8d; font-size: 12px;">No activities recorded</p>'}
+            </div>
+            
+            <div class="action-buttons">
+                <button class="btn-small btn-view" onclick="viewSession('${session.student_id}')">
+                    <i class="fas fa-eye"></i> Details
+                </button>
+                ${session.suspicion_score >= 30 ? `
+                    <button class="btn-small btn-flag" onclick="flagSession('${session.student_id}')">
+                        <i class="fas fa-flag"></i> Flag
+                    </button>
+                ` : ''}
+                ${session.suspicion_score >= 60 ? `
+                    <button class="btn-small btn-lock" onclick="lockSession('${session.student_id}')">
+                        <i class="fas fa-lock"></i> Lock
+                    </button>
+                ` : ''}
+            </div>
+        </div>
+    `;
+    
+    return card;
+}
+
+function refreshDashboard() {
+    const studentsGrid = document.getElementById('studentsGrid');
+    
+    // Count sessions by status
+    let criticalCount = 0;
+    let warningCount = 0;
+    let normalCount = 0;
+    
+    mockStudentSessions.forEach(session => {
+        if (session.suspicion_score >= 60) criticalCount++;
+        else if (session.suspicion_score >= 30) warningCount++;
+        else normalCount++;
+    });
+    
+    // Update global stats
+    document.getElementById('activeSessionsCount').textContent = mockStudentSessions.length;
+    document.getElementById('criticalAlertsCount').textContent = criticalCount;
+    document.getElementById('warningsCount').textContent = warningCount;
+    document.getElementById('normalSessionsCount').textContent = normalCount;
+    
+    // Clear grid
+    studentsGrid.innerHTML = '';
+    
+    // Add critical alerts banner
+    const criticalSessions = mockStudentSessions.filter(s => s.suspicion_score >= 60);
+    if (criticalSessions.length > 0) {
+        const alertsContainer = document.getElementById('criticalAlertsContainer');
+        alertsContainer.innerHTML = criticalSessions.map(session => `
+            <div class="alert-banner">
+                <div class="alert-title">
+                    <i class="fas fa-exclamation-circle"></i>
+                    CRITICAL ALERT: ${session.student_name}
+                </div>
+                <div class="alert-message">
+                    Suspicion score ${session.suspicion_score}/100. Multiple violations detected.
+                    ${session.multiple_faces_detected > 0 ? `Multiple faces detected ${session.multiple_faces_detected} times. ` : ''}
+                    ${session.devtools_opened ? 'DevTools opened. ' : ''}
+                    Recommend immediate intervention.
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    // Add student cards
+    mockStudentSessions.forEach(session => {
+        const card = createStudentCard(session);
+        studentsGrid.appendChild(card);
+    });
+}
+
+function viewSession(studentId) {
+    alert(`View detailed session for student: ${studentId}`);
+    // In real implementation, would open detailed view
+}
+
+function flagSession(studentId) {
+    alert(`Session flagged for review: ${studentId}`);
+    // In real implementation, would flag in database
+}
+
+function lockSession(studentId) {
+    if (confirm(`Are you sure you want to lock and submit this quiz?\n\nStudent: ${studentId}`)) {
+        alert(`Quiz locked and submitted for: ${studentId}`);
+        // In real implementation, would lock quiz in database
+    }
+}
+
+// Refresh dashboard every 5 seconds
+refreshDashboard();
+setInterval(refreshDashboard, 5000);
+</script>
+
+{% endblock %}

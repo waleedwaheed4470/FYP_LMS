@@ -1,0 +1,1629 @@
+{% extends "base.html" %}
+
+{% block title %}{{ quiz.title }} - {% if mode == 'take' %}Take Quiz{% else %}Quiz Results{% endif %}{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <nav class="dashboard-nav">
+        <div class="nav-brand">
+            <i class="fas fa-graduation-cap"></i>
+            <span>{% if mode == 'take' %}Take Quiz{% else %}Quiz Results{% endif %}</span>
+        </div>
+        <div class="nav-user">
+            {% if mode == 'take' %}
+            <div id="timerDisplay" class="quiz-timer">
+                <i class="fas fa-clock"></i>
+                <span id="timerText">--:--</span>
+            </div>
+            {% endif %}
+            <a href="{{ url_for('student_quizzes') }}" class="btn btn-outline btn-small">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+        </div>
+    </nav>
+
+    <div class="dashboard-content" style="max-width: 900px; margin: 0 auto;">
+
+        {% if mode == 'take' %}
+        <!-- ========== QUIZ TAKING MODE ========== -->
+        <div class="quiz-take-header">
+            <h1>{{ quiz.title }}</h1>
+            {% if quiz.description %}
+            <p class="muted">{{ quiz.description }}</p>
+            {% endif %}
+            <div class="quiz-take-meta">
+                <span><i class="fas fa-list"></i> {{ quiz.questions|length }} Questions</span>
+                <span><i class="fas fa-clock"></i> {{ quiz.time_limit_minutes }} Minutes</span>
+                <span><i class="fas fa-exclamation-circle" style="color:#e74c3c;"></i> One attempt only</span>
+            </div>
+        </div>
+
+        <!-- Warning Banner -->
+        <div class="quiz-warning-banner">
+            <i class="fas fa-shield-alt"></i>
+            <div>
+                <strong>🔒 Proctored Quiz — Camera & Expression Monitoring Active</strong>
+                <p>Your camera monitors your face and facial expressions during the quiz. You have 3 warnings before the quiz is locked and submitted. Keep your face visible, stay calm, and focus on your screen.</p>
+            </div>
+        </div>
+
+        <!-- Camera Proctoring Panel (Floating Draggable) -->
+        <div class="proctor-panel" id="proctorPanel">
+            <div class="proctor-drag-handle" id="proctorDragHandle">
+                <span><i class="fas fa-circle"></i> Live Monitor</span>
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <span class="proctor-rec-badge">REC</span>
+                    <button class="proctor-minimize-btn" id="proctorMinimizeBtn" title="Minimize / Expand">
+                        <i class="fas fa-minus" id="proctorMinimizeIcon"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="proctor-body" id="proctorBody">
+                <div class="proctor-video-wrap">
+                    <video id="proctorVideo" autoplay muted playsinline></video>
+                    <canvas id="proctorCanvas" style="display:none;"></canvas>
+                    <div class="proctor-status" id="proctorStatus">
+                        <i class="fas fa-spinner fa-spin"></i> Starting camera...
+                    </div>
+                    <div class="proctor-face-box" id="faceBox" style="display:none;"></div>
+                </div>
+                <div class="proctor-info">
+                    <div class="proctor-warnings" id="warningCounter">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Warnings: <strong id="warningCount">0</strong> / 3</span>
+                    </div>
+                    <div class="proctor-indicator" id="proctorIndicator">
+                        <div class="proctor-dot proctor-dot-loading" id="proctorDot"></div>
+                        <span id="proctorLabel">Initializing...</span>
+                    </div>
+                    <div class="proctor-expression" id="expressionDisplay">
+                        <i class="fas fa-theater-masks"></i>
+                        <span id="expressionLabel">Expression: --</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Proctor Alert Overlay -->
+        <div class="proctor-alert-overlay" id="proctorAlertOverlay" style="display:none;">
+            <div class="proctor-alert-box">
+                <div class="proctor-alert-icon" id="alertIcon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h2 id="alertTitle">Warning!</h2>
+                <p id="alertMessage">Please look at the screen.</p>
+                <div id="alertActions">
+                    <button class="btn btn-primary btn-large" id="alertDismissBtn" onclick="dismissAlert()">
+                        <i class="fas fa-check"></i> I understand
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <form id="quizForm" method="POST" action="{{ url_for('student_take_quiz', quiz_id=quiz.id) }}">
+            <input type="hidden" name="time_taken_seconds" id="timeTakenInput" value="0">
+            <input type="hidden" name="suspicious_activities" id="suspiciousInput" value="[]">
+            <input type="hidden" name="submission_type" id="submissionTypeInput" value="normal">
+
+            {% set option_labels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'] %}
+            {% for q in quiz.questions %}
+            {% set q_idx = loop.index0 %}
+            <div class="quiz-question-card" id="qcard_{{ q_idx }}">
+                <div class="qqc-header">
+                    <span class="qqc-number">Question {{ loop.index }} of {{ quiz.questions|length }}</span>
+                    <span class="qqc-status" id="qstatus_{{ q_idx }}">
+                        <i class="fas fa-circle"></i> Unanswered
+                    </span>
+                </div>
+                <p class="qqc-text">{{ q.question }}</p>
+                <div class="qqc-options">
+                    {% for opt in q.options %}
+                    <label class="qqc-option" for="answer_{{ q_idx }}_{{ loop.index0 }}">
+                        <input type="radio" 
+                               name="answer_{{ q_idx }}" 
+                               value="{{ loop.index0 }}"
+                               id="answer_{{ q_idx }}_{{ loop.index0 }}"
+                               onchange="markAnswered({{ q_idx }})">
+                        <span class="qqc-opt-label">{{ option_labels[loop.index0] }}</span>
+                        <span class="qqc-opt-text">{{ opt }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+
+            <!-- Progress & Submit -->
+            <div class="quiz-progress-bar">
+                <div class="qpb-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+            <div class="quiz-submit-row">
+                <span class="quiz-answered-count">
+                    <i class="fas fa-check-circle"></i>
+                    <span id="answeredCount">0</span> / {{ quiz.questions|length }} answered
+                </span>
+                <button type="button" class="btn btn-primary btn-large" onclick="confirmSubmit()">
+                    <i class="fas fa-paper-plane"></i> Submit Quiz
+                </button>
+            </div>
+        </form>
+
+        {% elif mode == 'result' %}
+        <!-- ========== RESULTS MODE ========== -->
+        <div class="quiz-result-header">
+            <h1>{{ quiz.title }} — Results</h1>
+            <p class="muted">Your quiz attempt results</p>
+        </div>
+
+        <div class="result-score-card">
+            <div class="rsc-main">
+                <div class="rsc-circle {% if attempt.percentage >= 70 %}rsc-pass{% elif attempt.percentage >= 50 %}rsc-avg{% else %}rsc-fail{% endif %}">
+                    <span class="rsc-pct">{{ attempt.percentage }}%</span>
+                    <span class="rsc-label">Score</span>
+                </div>
+            </div>
+            <div class="rsc-details">
+                <div class="rsc-item">
+                    <span class="rsc-key">Score</span>
+                    <span class="rsc-val">{{ attempt.score }} / {{ attempt.total }}</span>
+                </div>
+                <div class="rsc-item">
+                    <span class="rsc-key">Grade</span>
+                    <span class="rsc-val rsc-grade">{{ attempt.grade }}</span>
+                </div>
+                <div class="rsc-item">
+                    <span class="rsc-key">Time</span>
+                    <span class="rsc-val">{{ (attempt.time_taken_seconds // 60) }}m {{ (attempt.time_taken_seconds % 60) }}s</span>
+                </div>
+                <div class="rsc-item">
+                    <span class="rsc-key">Status</span>
+                    <span class="rsc-val {% if attempt.percentage >= 50 %}text-success{% else %}text-danger{% endif %}">
+                        {{ 'Passed ✅' if attempt.percentage >= 50 else 'Failed ❌' }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        {% if attempt.suspicious_activities and attempt.suspicious_activities|length > 0 %}
+        <div class="quiz-warning-banner" style="background: #fff5f5; border-color: #e74c3c;">
+            <i class="fas fa-exclamation-triangle" style="color:#e74c3c;"></i>
+            <div>
+                <strong style="color:#e74c3c;">{{ attempt.suspicious_activities|length }} Suspicious Activities Recorded</strong>
+                <ul style="margin-top:8px; padding-left:20px;">
+                    {% for sa in attempt.suspicious_activities %}
+                    <li style="font-size:13px; color:#c0392b;">{{ sa }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Per-Question Review -->
+        <div class="dashboard-section">
+            <h2>Question Review</h2>
+            {% set option_labels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'] %}
+            {% for q in quiz.questions %}
+            {% set correct_idx = q.correct_answer %}
+            {% set student_idx = attempt.answers.get(loop.index0|string) %}
+            {% set is_correct = (student_idx is not none and student_idx|int == correct_idx) %}
+            <div class="review-question-card {% if is_correct %}review-correct{% else %}review-wrong{% endif %}">
+                <div class="rqc-header">
+                    <span class="rqc-number">Q{{ loop.index }}</span>
+                    <span class="rqc-status">{{ '✅ Correct' if is_correct else '❌ Wrong' }}</span>
+                </div>
+                <p class="rqc-text">{{ q.question }}</p>
+                <div class="rqc-options">
+                    {% for opt in q.options %}
+                    <div class="rqc-option 
+                        {% if loop.index0 == correct_idx %}rqc-opt-correct{% endif %}
+                        {% if student_idx is not none and loop.index0 == student_idx|int and loop.index0 != correct_idx %}rqc-opt-wrong{% endif %}">
+                        <span class="rqc-opt-label">{{ option_labels[loop.index0] }}</span>
+                        <span>{{ opt }}</span>
+                        {% if loop.index0 == correct_idx %}
+                        <span class="rqc-tag-correct">Correct</span>
+                        {% endif %}
+                        {% if student_idx is not none and loop.index0 == student_idx|int and loop.index0 != correct_idx %}
+                        <span class="rqc-tag-wrong">Your Answer</span>
+                        {% endif %}
+                        {% if student_idx is not none and loop.index0 == student_idx|int and loop.index0 == correct_idx %}
+                        <span class="rqc-tag-correct">Your Answer ✔</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div style="text-align:center; margin-top: 30px;">
+            <a href="{{ url_for('student_quiz_result_pdf', quiz_id=quiz.id) }}" class="btn btn-primary btn-large">
+                <i class="fas fa-file-pdf"></i> Download Result PDF
+            </a>
+            <a href="{{ url_for('student_quizzes') }}" class="btn btn-outline btn-large" style="margin-left: 15px;">
+                <i class="fas fa-arrow-left"></i> Back to Quizzes
+            </a>
+        </div>
+
+        {% endif %}
+    </div>
+</div>
+
+<style>
+/* Quiz Take Header */
+.quiz-take-header, .quiz-result-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.quiz-take-header h1, .quiz-result-header h1 {
+    font-size: 28px;
+    color: #2c3e50;
+    margin-bottom: 8px;
+}
+
+.quiz-take-header h1 i, .quiz-result-header h1 i {
+    color: #1e40af;
+}
+
+.quiz-take-meta {
+    display: flex;
+    justify-content: center;
+    gap: 25px;
+    margin-top: 15px;
+    font-size: 14px;
+    color: #7f8c8d;
+}
+
+.quiz-take-meta i {
+    color: #1e40af;
+}
+
+/* Timer */
+.quiz-timer {
+    background: linear-gradient(135deg, #1e40af, #06b6d4);
+    color: white;
+    padding: 8px 20px;
+    border-radius: 25px;
+    font-weight: 700;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: pulse-timer 2s infinite;
+}
+
+.quiz-timer.timer-warning {
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    animation: pulse-timer 1s infinite;
+}
+
+.quiz-timer.timer-danger {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    animation: pulse-timer 0.5s infinite;
+}
+
+@keyframes pulse-timer {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+}
+
+/* Warning Banner */
+.quiz-warning-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    padding: 18px 22px;
+    background: #fff8e1;
+    border: 2px solid #f9a825;
+    border-radius: 12px;
+    margin-bottom: 25px;
+    font-size: 14px;
+}
+
+.quiz-warning-banner i {
+    font-size: 24px;
+    color: #f9a825;
+    margin-top: 2px;
+}
+
+.quiz-warning-banner strong {
+    color: #f57f17;
+}
+
+.quiz-warning-banner p {
+    color: #795548;
+    margin: 4px 0 0;
+    font-size: 13px;
+}
+
+/* Question Card */
+.quiz-question-card {
+    background: white;
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    border-left: 5px solid #e0e0e0;
+    transition: border-color 0.3s;
+}
+
+.quiz-question-card.answered {
+    border-left-color: #27ae60;
+}
+
+.qqc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+}
+
+.qqc-number {
+    font-weight: 700;
+    color: #1e40af;
+    font-size: 14px;
+}
+
+.qqc-status {
+    font-size: 12px;
+    color: #bbb;
+}
+
+.qqc-status.answered-status {
+    color: #27ae60;
+}
+
+.qqc-text {
+    font-size: 16px;
+    color: #2c3e50;
+    font-weight: 600;
+    margin-bottom: 18px;
+    line-height: 1.5;
+}
+
+.qqc-options {
+    display: grid;
+    gap: 10px;
+}
+
+.qqc-option {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px;
+    background: #f8f9fb;
+    border: 2px solid #e8e8f0;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 14px;
+}
+
+.qqc-option:hover {
+    border-color: #1e40af;
+    background: #f0f0ff;
+}
+
+.qqc-option input[type="radio"] {
+    display: none;
+}
+
+.qqc-option input[type="radio"]:checked + .qqc-opt-label {
+    background: #1e40af;
+    color: white;
+}
+
+.qqc-option:has(input:checked) {
+    border-color: #1e40af;
+    background: #eef0ff;
+}
+
+.qqc-opt-label {
+    width: 34px;
+    height: 34px;
+    background: #e0e0e0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    color: #555;
+    flex-shrink: 0;
+    transition: all 0.3s;
+}
+
+.qqc-opt-text {
+    flex: 1;
+    color: #333;
+}
+
+/* Progress Bar */
+.quiz-progress-bar {
+    height: 6px;
+    background: #e8e8f0;
+    border-radius: 3px;
+    margin: 25px 0 15px;
+    overflow: hidden;
+}
+
+.qpb-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #1e40af, #27ae60);
+    border-radius: 3px;
+    transition: width 0.4s ease;
+}
+
+.quiz-submit-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+}
+
+.quiz-answered-count {
+    font-size: 15px;
+    color: #555;
+}
+
+.quiz-answered-count i {
+    color: #27ae60;
+}
+
+/* ===== RESULT STYLES ===== */
+.result-score-card {
+    background: white;
+    border-radius: 20px;
+    padding: 35px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    margin-bottom: 30px;
+    display: flex;
+    align-items: center;
+    gap: 40px;
+    flex-wrap: wrap;
+}
+
+.rsc-main {
+    flex-shrink: 0;
+}
+
+.rsc-circle {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 6px solid;
+}
+
+.rsc-pass {
+    border-color: #27ae60;
+    background: #eafaf1;
+}
+
+.rsc-avg {
+    border-color: #f39c12;
+    background: #fef9e7;
+}
+
+.rsc-fail {
+    border-color: #e74c3c;
+    background: #fdedec;
+}
+
+.rsc-pct {
+    font-size: 36px;
+    font-weight: 800;
+    color: #2c3e50;
+}
+
+.rsc-label {
+    font-size: 13px;
+    color: #7f8c8d;
+    font-weight: 500;
+}
+
+.rsc-details {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.rsc-item {
+    padding: 12px 18px;
+    background: #f8f9fb;
+    border-radius: 10px;
+}
+
+.rsc-key {
+    display: block;
+    font-size: 12px;
+    color: #7f8c8d;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.rsc-val {
+    font-size: 18px;
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+.rsc-grade {
+    color: #1e40af;
+}
+
+.text-success { color: #27ae60; }
+.text-danger { color: #e74c3c; }
+
+/* Review Question Card */
+.review-question-card {
+    background: white;
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.review-correct {
+    border-left: 5px solid #27ae60;
+}
+
+.review-wrong {
+    border-left: 5px solid #e74c3c;
+}
+
+.rqc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.rqc-number {
+    font-weight: 700;
+    color: #1e40af;
+}
+
+.rqc-status {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.rqc-text {
+    font-size: 15px;
+    color: #2c3e50;
+    font-weight: 600;
+    margin-bottom: 14px;
+}
+
+.rqc-options {
+    display: grid;
+    gap: 8px;
+}
+
+.rqc-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: #f8f9fb;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.rqc-opt-correct {
+    background: #eafaf1;
+    border: 1px solid #27ae60;
+}
+
+.rqc-opt-wrong {
+    background: #fdedec;
+    border: 1px solid #e74c3c;
+}
+
+.rqc-opt-label {
+    width: 28px;
+    height: 28px;
+    background: #1e40af;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.rqc-tag-correct {
+    margin-left: auto;
+    font-size: 12px;
+    color: #27ae60;
+    font-weight: 700;
+    background: #d5f5e3;
+    padding: 2px 10px;
+    border-radius: 10px;
+}
+
+.rqc-tag-wrong {
+    margin-left: auto;
+    font-size: 12px;
+    color: #e74c3c;
+    font-weight: 700;
+    background: #fadbd8;
+    padding: 2px 10px;
+    border-radius: 10px;
+}
+
+@media (max-width: 768px) {
+    .result-score-card {
+        flex-direction: column;
+        text-align: center;
+    }
+    .rsc-details {
+        grid-template-columns: 1fr;
+    }
+    .quiz-submit-row {
+        flex-direction: column;
+        gap: 15px;
+    }
+    .proctor-panel {
+        width: 260px;
+        right: 10px;
+        bottom: 10px;
+    }
+}
+
+/* ===== PROCTORING PANEL — FLOATING DRAGGABLE ===== */
+.proctor-panel {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9998;
+    width: 290px;
+    background: #1a1a2e;
+    border-radius: 14px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.07);
+    overflow: hidden;
+    user-select: none;
+    transition: top 0.5s ease-out, bottom 0.5s ease-out;
+}
+
+.proctor-panel.scrolled-down {
+    bottom: 20px;
+    top: auto;
+}
+.proctor-panel.dragging {
+    box-shadow: 0 20px 60px rgba(0,0,0,0.7), 0 0 0 2px rgba(99,179,237,0.45);
+    opacity: 0.95;
+    transition: none !important;
+}
+.proctor-panel.auto-move {
+    transition: right 1.6s cubic-bezier(0.45, 0, 0.55, 1),
+                bottom 1.6s cubic-bezier(0.45, 0, 0.55, 1),
+                top 1.6s cubic-bezier(0.45, 0, 0.55, 1),
+                left 1.6s cubic-bezier(0.45, 0, 0.55, 1),
+                box-shadow 0.3s;
+}
+/* Drag handle bar */
+.proctor-drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 11px;
+    background: linear-gradient(90deg, #0f0f23, #1e1e4e);
+    cursor: grab;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    color: #90cdf4;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+}
+.proctor-drag-handle:active { cursor: grabbing; }
+.proctor-drag-handle > span {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+.proctor-drag-handle > span > i {
+    font-size: 10px;
+    color: #f87171;
+    animation: rec-blink 1.2s infinite;
+}
+@keyframes rec-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+}
+.proctor-rec-badge {
+    background: #e53e3e;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    padding: 2px 5px;
+    border-radius: 4px;
+    animation: rec-blink 1.2s infinite;
+}
+.proctor-minimize-btn {
+    background: rgba(255,255,255,0.1);
+    border: none;
+    color: #a0aec0;
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    line-height: 1;
+    transition: background 0.2s, color 0.2s;
+    flex-shrink: 0;
+}
+.proctor-minimize-btn:hover { background: rgba(255,255,255,0.22); color: #fff; }
+/* Body wrapper */
+.proctor-body {
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    gap: 10px;
+    transition: all 0.25s ease;
+}
+.proctor-body.minimized {
+    display: none;
+}
+
+.proctor-video-wrap {
+    width: 100%;
+    height: 160px;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    background: #0f0f23;
+    flex-shrink: 0;
+}
+
+.proctor-video-wrap video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+}
+
+.proctor-status {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    padding: 6px 10px;
+    font-size: 11px;
+    text-align: center;
+}
+
+.proctor-face-box {
+    position: absolute;
+    border: 2px solid #27ae60;
+    border-radius: 4px;
+    pointer-events: none;
+    transition: all 0.15s;
+}
+
+.proctor-face-box.face-warning {
+    border-color: #f39c12;
+}
+
+.proctor-face-box.face-danger {
+    border-color: #e74c3c;
+    box-shadow: 0 0 15px rgba(231, 76, 60, 0.5);
+}
+
+.proctor-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 12px;
+    padding: 5px 10px;
+}
+
+.proctor-warnings {
+    color: #ffd93d;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.proctor-warnings.danger {
+    color: #e74c3c;
+    animation: blink-warn 0.5s infinite;
+}
+
+@keyframes blink-warn {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+.proctor-indicator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #aaa;
+    font-size: 13px;
+}
+
+.proctor-expression {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: #aaa;
+    padding: 4px 0;
+}
+
+.proctor-expression i {
+    font-size: 16px;
+}
+
+.proctor-expression.expression-ok {
+    color: #27ae60;
+}
+
+.proctor-expression.expression-warn {
+    color: #f39c12;
+}
+
+.proctor-expression.expression-danger {
+    color: #e74c3c;
+    font-weight: 600;
+}
+
+.proctor-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.proctor-dot-loading {
+    background: #f39c12;
+    animation: dot-pulse 1s infinite;
+}
+
+.proctor-dot-ok {
+    background: #27ae60;
+    box-shadow: 0 0 8px rgba(39, 174, 96, 0.6);
+}
+
+.proctor-dot-warn {
+    background: #f39c12;
+    box-shadow: 0 0 8px rgba(243, 156, 18, 0.6);
+}
+
+.proctor-dot-danger {
+    background: #e74c3c;
+    box-shadow: 0 0 8px rgba(231, 76, 60, 0.6);
+    animation: dot-pulse 0.4s infinite;
+}
+
+@keyframes dot-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+/* Alert Overlay */
+.proctor-alert-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.proctor-alert-box {
+    background: white;
+    border-radius: 20px;
+    padding: 40px 50px;
+    text-align: center;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.proctor-alert-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    font-size: 36px;
+}
+
+.proctor-alert-icon.icon-warning {
+    background: #fff3cd;
+    color: #f39c12;
+}
+
+.proctor-alert-icon.icon-danger {
+    background: #f8d7da;
+    color: #e74c3c;
+}
+
+.proctor-alert-icon.icon-locked {
+    background: #e74c3c;
+    color: white;
+}
+
+.proctor-alert-box h2 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+    font-size: 24px;
+}
+
+.proctor-alert-box p {
+    color: #555;
+    margin-bottom: 25px;
+    font-size: 15px;
+    line-height: 1.6;
+}
+</style>
+
+{% if mode == 'take' %}
+<!-- Backend Face Detection API (No external CDN needed) -->
+<script>
+// ===== BACKEND FACE DETECTION WITH NO EXTERNAL DEPENDENCIES =====
+let faceApiLoaded = true;  // Always true since we're using backend
+let modelLoadProgress = 0;
+
+async function waitForFaceApi() {
+    // Backend is always ready
+    return Promise.resolve(true);
+}
+
+async function loadFaceDetectionModels() {
+    // No model loading needed - backend handles it
+    console.log('[Face Detection] Backend API ready - no model download needed');
+    return true;
+}
+
+(function() {
+    // ===== TIMER =====
+    const timeLimitMinutes = {{ quiz.time_limit_minutes }};
+    let remainingSeconds = timeLimitMinutes * 60;
+    const startTime = Date.now();
+    const timerDisplay = document.getElementById('timerText');
+    const timerEl = document.getElementById('timerDisplay');
+    let quizLocked = false;
+
+    function updateTimer() {
+        if (quizLocked) return;
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        remainingSeconds = Math.max(0, (timeLimitMinutes * 60) - elapsed);
+
+        const mins = Math.floor(remainingSeconds / 60);
+        const secs = remainingSeconds % 60;
+        timerDisplay.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+
+        if (remainingSeconds <= 60) {
+            timerEl.className = 'quiz-timer timer-danger';
+        } else if (remainingSeconds <= 300) {
+            timerEl.className = 'quiz-timer timer-warning';
+        }
+
+        if (remainingSeconds <= 0) {
+            clearInterval(timerInterval);
+            addSuspicious('Timer expired — auto-submitted');
+            lockAndSubmit('Time is up! Your quiz has been auto-submitted.');
+            return;
+        }
+    }
+
+    const timerInterval = setInterval(updateTimer, 1000);
+    updateTimer();
+
+    // ===== SUSPICIOUS ACTIVITY TRACKING =====
+    const suspiciousActivities = [];
+
+    function addSuspicious(msg) {
+        const timestamp = new Date().toLocaleTimeString();
+        suspiciousActivities.push(`[${timestamp}] ${msg}`);
+        document.getElementById('suspiciousInput').value = JSON.stringify(suspiciousActivities);
+    }
+
+    // ===== TAB SWITCHING — INSTANT LOCK & SUBMIT =====
+    let tabSwitchCount = 0;
+
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden && !quizLocked) {
+            tabSwitchCount++;
+            addSuspicious('Tab switched / window minimized (count: ' + tabSwitchCount + ')');
+            // Instant lock on tab switch
+            lockAndSubmit('🚫 You switched tabs! Your quiz has been automatically locked and submitted to your teacher.');
+        }
+    });
+
+    window.addEventListener('blur', function() {
+        if (!quizLocked) {
+            tabSwitchCount++;
+            if (tabSwitchCount >= 1) {
+                addSuspicious('Window lost focus — quiz locked (count: ' + tabSwitchCount + ')');
+                lockAndSubmit('🚫 You left the quiz window! Your quiz has been automatically locked and submitted.');
+            }
+        }
+    });
+
+    // Copy/paste/right-click prevention
+    document.addEventListener('copy', function(e) { e.preventDefault(); addSuspicious('Tried to copy'); });
+    document.addEventListener('contextmenu', function(e) { e.preventDefault(); addSuspicious('Right-click blocked'); });
+    document.addEventListener('paste', function(e) { e.preventDefault(); addSuspicious('Tried to paste'); });
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && (e.key === 'c' || e.key === 'v' || e.key === 'a' || e.key === 'u')) {
+            e.preventDefault();
+            addSuspicious('Shortcut blocked: Ctrl+' + e.key.toUpperCase());
+        }
+        if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i'))) {
+            e.preventDefault();
+            addSuspicious('DevTools shortcut blocked');
+        }
+    });
+
+    // ===== CAMERA PROCTORING =====
+    const video = document.getElementById('proctorVideo');
+    const canvas = document.getElementById('proctorCanvas');
+    const ctx = canvas.getContext('2d');
+    const statusEl = document.getElementById('proctorStatus');
+    const dotEl = document.getElementById('proctorDot');
+    const labelEl = document.getElementById('proctorLabel');
+    const faceBox = document.getElementById('faceBox');
+    const warningCountEl = document.getElementById('warningCount');
+    const warningCounter = document.getElementById('warningCounter');
+
+    let faceWarnings = 0;
+    const MAX_WARNINGS = 3;
+    let noFaceFrames = 0;
+    const NO_FACE_THRESHOLD = 15; // ~2.5 seconds of no face = warning
+    let cameraReady = false;
+    let faceDetectionRunning = false;
+
+    // Expression tracking
+    let suspiciousExpressionFrames = 0;
+    const EXPRESSION_WARN_THRESHOLD = 12; // ~2 seconds of suspicious expression
+    const SUSPICIOUS_EXPRESSIONS = ['fearful', 'angry', 'disgusted', 'surprised'];
+    const EXPRESSION_EMOJI = {
+        'neutral': '😐',
+        'happy': '😊',
+        'sad': '😢',
+        'angry': '😠',
+        'fearful': '😨',
+        'disgusted': '🤢',
+        'surprised': '😲'
+    };
+    let lastExpression = 'neutral';
+
+    async function startCamera() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { width: 320, height: 240, facingMode: 'user' }, 
+                audio: false 
+            });
+            video.srcObject = stream;
+            video.onloadedmetadata = () => {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                cameraReady = true;
+                statusEl.innerHTML = '<i class="fas fa-camera"></i> Camera active';
+                loadFaceDetection();
+            };
+        } catch (err) {
+            statusEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> Camera denied';
+            dotEl.className = 'proctor-dot proctor-dot-warn';
+            labelEl.textContent = 'Camera unavailable — monitoring via tab tracking';
+            addSuspicious('Camera access denied by student');
+        }
+    }
+
+    async function loadFaceDetection() {
+        try {
+            labelEl.textContent = 'Loading face detection models...';
+            console.log('[Face Detection] 🚀 Starting face detection initialization');
+            
+            // Call the robust model loader with 3 CDN fallbacks
+            const success = await loadFaceDetectionModels();
+            
+            if (success && faceApiLoaded) {
+                dotEl.className = 'proctor-dot proctor-dot-ok';
+                labelEl.textContent = 'Face detected — monitoring active';
+                statusEl.innerHTML = '<i class="fas fa-check-circle" style="color:#27ae60;"></i> Proctoring active';
+                faceDetectionRunning = true;
+                console.log('[Face Detection] ✅ Proctoring initialized successfully - starting face detection');
+                detectFace();
+            } else {
+                throw new Error('Model loading returned false or faceApiLoaded flag not set');
+            }
+        } catch (err) {
+            console.error('[Face Detection] ❌ Failed to load models:', err.message);
+            
+            // Graceful fallback - don't record as suspicious, it's just unavailable
+            dotEl.className = 'proctor-dot proctor-dot-warn';
+            labelEl.textContent = 'Face detection unavailable';
+            statusEl.innerHTML = '<i class="fas fa-info-circle" style="color:#f39c12;"></i> Using tab monitoring';
+            
+            // Log for reference but don't count as suspicious
+            console.warn('[Face Detection] ⚠️ Face detection disabled - falling back to tab-switching detection only');
+            console.warn('[Face Detection] This is NOT counted as a violation');
+            
+            faceDetectionRunning = false;
+            // Do NOT call addSuspicious here - it's not a student violation
+        }
+    }
+
+    async function detectFace() {
+        // Check if detection can proceed
+        if (!faceDetectionRunning || quizLocked || !cameraReady) return;
+        
+        try {
+            // Get current frame from video element
+            const canvas = document.getElementById('proctorCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Convert canvas to base64 JPEG
+            const frameData = canvas.toDataURL('image/jpeg', 0.8);
+            
+            // Send to backend API
+            const response = await fetch('/api/detect-face', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    frame_data: frameData
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (!result.success) {
+                console.warn('[Face Detection] API Error:', result.error);
+                // Graceful degradation
+                if (noFaceFrames === undefined) noFaceFrames = 0;
+                noFaceFrames++;
+                return;
+            }
+            
+            // Process detection results from backend
+            const facesCount = result.faces_detected || 0;
+            const multipleFaces = result.multiple_faces || false;
+            const noFaceDetected = result.no_face_detected || false;
+            const suspiciousActivities = result.suspicious_activities || [];
+            
+            // Simulate the detection results similar to face-api.js
+            if (facesCount > 0) {
+                // Face detected
+                noFaceFrames = 0;
+                
+                // Display faces detected
+                const faceBox = document.getElementById('faceBox');
+                faceBox.style.display = 'block';
+                faceBox.className = 'proctor-face-box';
+                
+                // Default positioning - center area
+                const scale = 220 / video.videoWidth;
+                faceBox.style.left = (video.videoWidth * 0.2 * scale) + 'px';
+                faceBox.style.top = (video.videoHeight * 0.2 * scale) + 'px';
+                faceBox.style.width = (video.videoWidth * 0.6 * scale) + 'px';
+                faceBox.style.height = (video.videoHeight * 0.6 * scale) + 'px';
+                
+                // Update status
+                const dotEl = document.getElementById('proctorDot');
+                const labelEl = document.getElementById('proctorLabel');
+                dotEl.className = 'proctor-dot proctor-dot-ok';
+                labelEl.textContent = 'Face detected — monitoring active';
+                
+                // Check for multiple faces
+                if (multipleFaces) {
+                    addSuspicious('Multiple faces detected (' + facesCount + ' people)');
+                    faceBox.className = 'proctor-face-box face-danger';
+                    noFaceFrames = 5; // Count multiple faces as suspicious
+                    triggerExpressionWarning('multiple_faces', 100);
+                }
+            } else if (noFaceDetected) {
+                // No face detected
+                noFaceFrames++;
+                const faceBox = document.getElementById('faceBox');
+                faceBox.style.display = 'none';
+                
+                const dotEl = document.getElementById('proctorDot');
+                const labelEl = document.getElementById('proctorLabel');
+                dotEl.className = 'proctor-dot proctor-dot-warn';
+                labelEl.textContent = 'Face not visible — look at screen!';
+                
+                if (noFaceFrames >= NO_FACE_THRESHOLD) {
+                    // Trigger a warning
+                    noFaceFrames = 0;
+                    triggerFaceWarning();
+                }
+            }
+            
+            // Log any suspicious activities detected
+            for (let activity of suspiciousActivities) {
+                if (activity && !activity.includes('No activity')) {
+                    addSuspicious(activity);
+                }
+            }
+        } catch (err) {
+            console.error('[Face Detection] Request error:', err);
+            // Graceful fallback - continue without face detection
+        }
+
+        // Run detection every ~170ms (~6 fps)
+        if (!quizLocked && faceDetectionRunning) {
+            setTimeout(detectFace, 170);
+        }
+    }
+
+    function triggerFaceWarning() {
+        faceWarnings++;
+        warningCountEl.textContent = faceWarnings;
+        addSuspicious('Face not detected / looking away (warning ' + faceWarnings + '/' + MAX_WARNINGS + ')');
+
+        if (faceWarnings >= MAX_WARNINGS) {
+            // ===== WARNING 3: LOCK the quiz & submit =====
+            warningCounter.className = 'proctor-warnings danger';
+            dotEl.className = 'proctor-dot proctor-dot-danger';
+            labelEl.textContent = 'QUIZ LOCKED';
+            lockAndSubmit('🔒 QUIZ LOCKED!\n\nYou received 3 warnings. Your quiz has been locked and submitted to your teacher.');
+        } else if (faceWarnings === 2) {
+            // ===== WARNING 2: FINAL WARNING =====
+            warningCounter.className = 'proctor-warnings danger';
+            faceBox.className = 'proctor-face-box face-danger';
+            showAlert(
+                'icon-danger',
+                '🚨 Final Warning! (2/3)',
+                'This is your LAST chance! One more violation and your quiz will be LOCKED and auto-submitted.',
+                true
+            );
+        } else if (faceWarnings === 1) {
+            // ===== WARNING 1 =====
+            showAlert(
+                'icon-warning',
+                '⚠️ Warning 1 of 3',
+                'Please look at the screen and stay focused! You have 2 warnings remaining before your quiz is locked.',
+                true
+            );
+        }
+    }
+
+    // ===== EXPRESSION-BASED WARNING =====
+    function triggerExpressionWarning(expression, confidence) {
+        faceWarnings++;
+        warningCountEl.textContent = faceWarnings;
+
+        let expressionMsg = '';
+        let alertTitle = '';
+        let alertMessage = '';
+
+        if (expression === 'multiple_faces') {
+            expressionMsg = 'Multiple faces detected in camera';
+            alertTitle = '🚨 Multiple People Detected!';
+            alertMessage = 'More than one person was detected in your camera. Only you should be visible during the quiz.';
+        } else if (expression === 'fearful') {
+            expressionMsg = 'Fearful/anxious expression detected';
+            alertTitle = '⚠️ Suspicious Expression Detected';
+            alertMessage = 'Your facial expression appears anxious or fearful. Please stay calm and focus on your quiz. This has been recorded.';
+        } else if (expression === 'angry') {
+            expressionMsg = 'Angry/frustrated expression detected';
+            alertTitle = '⚠️ Unusual Expression Detected';
+            alertMessage = 'An angry or frustrated expression was detected. Please remain calm and continue your quiz normally.';
+        } else if (expression === 'disgusted') {
+            expressionMsg = 'Disgusted expression detected';
+            alertTitle = '⚠️ Suspicious Expression Detected';
+            alertMessage = 'An unusual facial expression was detected. Please focus on your screen and continue the quiz.';
+        } else if (expression === 'surprised') {
+            expressionMsg = 'Surprised expression detected';
+            alertTitle = '⚠️ Suspicious Activity';
+            alertMessage = 'A surprised expression was detected repeatedly. Please keep your attention on the quiz.';
+        } else {
+            expressionMsg = 'Suspicious expression: ' + expression;
+            alertTitle = '⚠️ Expression Alert';
+            alertMessage = 'Unusual facial behavior detected. Please focus on your quiz.';
+        }
+
+        addSuspicious(expressionMsg + ' (warning ' + faceWarnings + '/' + MAX_WARNINGS + ', confidence: ' + confidence + '%)');
+
+        if (faceWarnings >= MAX_WARNINGS) {
+            warningCounter.className = 'proctor-warnings danger';
+            dotEl.className = 'proctor-dot proctor-dot-danger';
+            labelEl.textContent = 'QUIZ LOCKED';
+            lockAndSubmit('🔒 QUIZ LOCKED!\n\nYou received 3 warnings due to suspicious activity. Your quiz has been locked and submitted to your teacher.');
+        } else if (faceWarnings === 2) {
+            warningCounter.className = 'proctor-warnings danger';
+            showAlert('icon-danger', '🚨 Final Warning! (2/3)', alertMessage + '\n\nThis is your LAST chance. One more violation will LOCK your quiz.', true);
+        } else {
+            showAlert('icon-warning', alertTitle + ' (1/3)', alertMessage + '\n\nYou have 2 warnings remaining.', true);
+        }
+    }
+
+    // ===== ALERT SYSTEM =====
+    function showAlert(iconClass, title, message, dismissable) {
+        const overlay = document.getElementById('proctorAlertOverlay');
+        const alertIcon = document.getElementById('alertIcon');
+        const alertTitle = document.getElementById('alertTitle');
+        const alertMessage = document.getElementById('alertMessage');
+        const dismissBtn = document.getElementById('alertDismissBtn');
+
+        alertIcon.className = 'proctor-alert-icon ' + iconClass;
+        alertTitle.textContent = title;
+        alertMessage.textContent = message;
+        dismissBtn.style.display = dismissable ? 'inline-block' : 'none';
+        overlay.style.display = 'flex';
+    }
+
+    window.dismissAlert = function() {
+        document.getElementById('proctorAlertOverlay').style.display = 'none';
+    };
+
+    // ===== LOCK & SUBMIT =====
+    function lockAndSubmit(reason) {
+        if (quizLocked) return;
+        quizLocked = true;
+        faceDetectionRunning = false;
+        clearInterval(timerInterval);
+
+        addSuspicious('QUIZ LOCKED: ' + reason);
+        // Mark this as a locked submission (auto-submitted due to violations)
+        document.getElementById('submissionTypeInput').value = 'locked';
+
+        // Stop camera
+        if (video.srcObject) {
+            video.srcObject.getTracks().forEach(t => t.stop());
+        }
+
+        dotEl.className = 'proctor-dot proctor-dot-danger';
+        labelEl.textContent = 'QUIZ LOCKED';
+        statusEl.innerHTML = '<i class="fas fa-lock" style="color:#e74c3c;"></i> Locked';
+
+        // Show locked overlay
+        showAlert(
+            'icon-locked',
+            '🔒 Quiz Locked',
+            reason,
+            false
+        );
+
+        // Auto-submit after 3 seconds
+        setTimeout(function() {
+            submitQuiz();
+        }, 3000);
+    }
+
+    // ===== ANSWER TRACKING =====
+    const totalQuestions = {{ quiz.questions|length }};
+
+    window.markAnswered = function(qIndex) {
+        if (quizLocked) return;
+        const card = document.getElementById('qcard_' + qIndex);
+        const status = document.getElementById('qstatus_' + qIndex);
+        card.classList.add('answered');
+        status.innerHTML = '<i class="fas fa-check-circle"></i> Answered';
+        status.className = 'qqc-status answered-status';
+
+        const answered = document.querySelectorAll('.quiz-question-card.answered').length;
+        document.getElementById('answeredCount').textContent = answered;
+        const pct = (answered / totalQuestions) * 100;
+        document.getElementById('progressFill').style.width = pct + '%';
+    };
+
+    // ===== SUBMIT =====
+    window.confirmSubmit = function() {
+        if (quizLocked) return;
+        const answered = document.querySelectorAll('.quiz-question-card.answered').length;
+        const unanswered = totalQuestions - answered;
+
+        let msg = 'Submit quiz with ' + answered + '/' + totalQuestions + ' questions answered?';
+        if (unanswered > 0) {
+            msg = '⚠️ You have ' + unanswered + ' unanswered question(s).\n\n' + msg;
+        }
+
+        if (confirm(msg)) {
+            // Explicitly mark this as a normal submission (student clicked submit button)
+            document.getElementById('submissionTypeInput').value = 'normal';
+            submitQuiz();
+        }
+    };
+
+    function submitQuiz() {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        document.getElementById('timeTakenInput').value = elapsed;
+        document.getElementById('suspiciousInput').value = JSON.stringify(suspiciousActivities);
+        
+        // Stop camera
+        if (video.srcObject) {
+            video.srcObject.getTracks().forEach(t => t.stop());
+        }
+        
+        // Remove beforeunload so submit goes through
+        window.onbeforeunload = null;
+        document.getElementById('quizForm').submit();
+    }
+
+    // Warn before leaving
+    window.onbeforeunload = function(e) {
+        if (!quizLocked) {
+            e.preventDefault();
+            e.returnValue = 'Are you sure you want to leave? Your quiz will be locked and submitted!';
+            return e.returnValue;
+        }
+    };
+
+    // ===== AUTO-FLOATING + DRAGGABLE PROCTOR PANEL =====
+    (function() {
+        const panel       = document.getElementById('proctorPanel');
+        const handle      = document.getElementById('proctorDragHandle');
+        const minimizeBtn = document.getElementById('proctorMinimizeBtn');
+        const body        = document.getElementById('proctorBody');
+        const icon        = document.getElementById('proctorMinimizeIcon');
+        const GAP = 14; // px from edge
+
+        // 4 corners: [right, bottom]  (null = 'auto' so we use top/left instead)
+        const CORNERS = [
+            { right: GAP,  bottom: GAP,  top: 'auto', left: 'auto' },  // bottom-right
+            { right: 'auto', bottom: GAP,  top: 'auto', left: GAP  },  // bottom-left
+            { right: 'auto', bottom: 'auto', top: GAP, left: GAP   },  // top-left
+            { right: GAP,  bottom: 'auto', top: GAP,  left: 'auto' },  // top-right
+        ];
+        let cornerIdx   = 3;  // START AT TOP-RIGHT (NOT AUTO-CYCLING)
+        let autoTimer   = null;
+        let resumeTimer = null;
+        let isDragging  = false;
+        let startX, startY, startRight, startBottom;
+        const DWELL_MS  = 5000;  // time to stay at each corner
+        const PAUSE_AFTER_DRAG_MS = 12000; // resume auto after manual drag
+
+        function applyCorner(c, animate) {
+            if (animate) panel.classList.add('auto-move');
+            else         panel.classList.remove('auto-move');
+            panel.style.right  = typeof c.right  === 'number' ? c.right  + 'px' : c.right;
+            panel.style.bottom = typeof c.bottom === 'number' ? c.bottom + 'px' : c.bottom;
+            panel.style.top    = typeof c.top    === 'number' ? c.top    + 'px' : c.top;
+            panel.style.left   = typeof c.left   === 'number' ? c.left   + 'px' : c.left;
+        }
+
+        function nextCorner() {
+            // AUTO-CYCLING DISABLED - Camera stays fixed at top-right
+            // cornerIdx = (cornerIdx + 1) % CORNERS.length;
+            // applyCorner(CORNERS[cornerIdx], true);
+            // scheduleNext();
+        }
+
+        function scheduleNext() {
+            // AUTO-CYCLING DISABLED - Camera stays fixed at top-right
+            clearTimeout(autoTimer);
+            // autoTimer = setTimeout(nextCorner, DWELL_MS);
+        }
+
+        function pauseAuto() {
+            clearTimeout(autoTimer);
+            clearTimeout(resumeTimer);
+            panel.classList.remove('auto-move');
+        }
+
+        function resumeAuto() {
+            scheduleNext();
+        }
+
+        // ---- Manual drag (overrides auto temporarily) ----
+        function beginDrag(clientX, clientY) {
+            pauseAuto();
+            isDragging = true;
+            panel.classList.add('dragging');
+            const rect = panel.getBoundingClientRect();
+            startX      = clientX;
+            startY      = clientY;
+            startRight  = window.innerWidth  - rect.right;
+            startBottom = window.innerHeight - rect.bottom;
+            // switch to right/bottom coordinate system for drag
+            panel.style.top  = 'auto';
+            panel.style.left = 'auto';
+            panel.style.right  = startRight  + 'px';
+            panel.style.bottom = startBottom + 'px';
+        }
+
+        function moveDrag(clientX, clientY) {
+            if (!isDragging) return;
+            const dx = clientX - startX;
+            const dy = clientY - startY;
+            const rect = panel.getBoundingClientRect();
+            let newRight  = Math.max(0, Math.min(startRight  - dx, window.innerWidth  - rect.width));
+            let newBottom = Math.max(0, Math.min(startBottom - dy, window.innerHeight - rect.height));
+            panel.style.right  = newRight  + 'px';
+            panel.style.bottom = newBottom + 'px';
+        }
+
+        function endDrag() {
+            if (!isDragging) return;
+            isDragging = false;
+            panel.classList.remove('dragging');
+            // AUTO-CYCLING DISABLED - Camera stays fixed at top-right
+            // resumeTimer = setTimeout(resumeAuto, PAUSE_AFTER_DRAG_MS);
+        }
+
+        // Mouse
+        handle.addEventListener('mousedown', function(e) {
+            if (e.target === minimizeBtn || minimizeBtn.contains(e.target)) return;
+            beginDrag(e.clientX, e.clientY);
+            e.preventDefault();
+        });
+        document.addEventListener('mousemove', function(e) { moveDrag(e.clientX, e.clientY); });
+        document.addEventListener('mouseup', endDrag);
+
+        // Touch
+        handle.addEventListener('touchstart', function(e) {
+            if (e.target === minimizeBtn || minimizeBtn.contains(e.target)) return;
+            const t = e.touches[0];
+            beginDrag(t.clientX, t.clientY);
+            e.preventDefault();
+        }, { passive: false });
+        document.addEventListener('touchmove', function(e) {
+            if (!isDragging) return;
+            moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+            e.preventDefault();
+        }, { passive: false });
+        document.addEventListener('touchend', endDrag);
+
+        // Minimize / Expand toggle
+        minimizeBtn.addEventListener('click', function() {
+            const isNowMinimized = body.classList.toggle('minimized');
+            icon.className = isNowMinimized ? 'fas fa-expand-alt' : 'fas fa-minus';
+            minimizeBtn.title = isNowMinimized ? 'Expand camera' : 'Minimize camera';
+        });
+
+        // ---- Set initial position (TOP-RIGHT, NO AUTO-CYCLING) ----
+        applyCorner(CORNERS[cornerIdx], false); // set initial position instantly
+        // scheduleNext();  // AUTO-CYCLING DISABLED - Camera stays fixed at top-right, only moves on scroll
+    })();
+
+    // ===== START CAMERA ON LOAD =====
+    startCamera();
+
+    // ===== SMART CAMERA POSITIONING — TOP TO RIGHT SIDE ON SCROLL =====
+    (function() {
+        const proctorPanel = document.getElementById('proctorPanel');
+        let isAtTop = true;
+        
+        window.addEventListener('scroll', function() {
+            // If user has scrolled more than 300px down, move camera to right side
+            const scrollTop = window.scrollY || document.documentElement.scrollTop;
+            
+            if (scrollTop > 300 && isAtTop) {
+                // Switch from top to right side
+                proctorPanel.classList.add('scrolled-down');
+                isAtTop = false;
+            } else if (scrollTop <= 300 && !isAtTop) {
+                // Switch back to top if user scrolls back up
+                proctorPanel.classList.remove('scrolled-down');
+                isAtTop = true;
+            }
+        }, { passive: true });
+    })();
+
+})();
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,380 @@
+{% extends "base.html" %}
+
+{% block title %}Create Professional Quiz - LMS{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="mb-0">
+                        <i class="fas fa-pencil-alt"></i> Create Professional Quiz
+                    </h2>
+                    <small>Design a quiz with complete metadata and professional quality</small>
+                </div>
+
+                <div class="card-body">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for cat, msg in messages %}
+                                <div class="alert alert-{{ cat }} alert-dismissible fade show">
+                                    <i class="fas fa-{{ 'check-circle' if cat == 'success' else 'exclamation-circle' }}"></i>
+                                    {{ msg }}
+                                    <button type="button" class="close" data-dismiss="alert">&times;</button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form method="POST" class="needs-validation" novalidate>
+                        <!-- Basic Information Section -->
+                        <div class="section-header mt-4 mb-3">
+                            <h4><i class="fas fa-info-circle"></i> Basic Information</h4>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="title" class="font-weight-bold">
+                                        <i class="fas fa-heading"></i> Quiz Title *
+                                    </label>
+                                    <input type="text" class="form-control" id="title" name="title" 
+                                           placeholder="e.g., Mid-Semester Exam" required>
+                                    <small class="form-text text-muted">Give your quiz a descriptive title</small>
+                                </div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="subject" class="font-weight-bold">
+                                        <i class="fas fa-book"></i> Subject *
+                                    </label>
+                                    <select class="form-control" id="subject" name="subject" required>
+                                        <option value="">-- Select Subject --</option>
+                                        {% for subject in subjects %}
+                                            <option value="{{ subject }}">{{ subject }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="quiz_number" class="font-weight-bold">
+                                        <i class="fas fa-hashtag"></i> Quiz Number *
+                                    </label>
+                                    <input type="number" class="form-control" id="quiz_number" name="quiz_number" 
+                                           value="1" min="1" required>
+                                    <small class="form-text text-muted">Sequential quiz number</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="description" class="font-weight-bold">
+                                <i class="fas fa-align-left"></i> Description
+                            </label>
+                            <textarea class="form-control" id="description" name="description" 
+                                      rows="3" placeholder="Describe what this quiz covers..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="instructions" class="font-weight-bold">
+                                <i class="fas fa-directions"></i> Instructions
+                            </label>
+                            <textarea class="form-control" id="instructions" name="instructions" 
+                                      rows="3" placeholder="Special instructions for students..."></textarea>
+                        </div>
+
+                        <!-- Quiz Settings Section -->
+                        <div class="section-header mt-4 mb-3">
+                            <h4><i class="fas fa-cog"></i> Quiz Settings</h4>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="difficulty" class="font-weight-bold">
+                                        <i class="fas fa-chart-bar"></i> Difficulty
+                                    </label>
+                                    <select class="form-control" id="difficulty" name="difficulty">
+                                        <option value="easy">Easy</option>
+                                        <option value="medium" selected>Medium</option>
+                                        <option value="hard">Hard</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="time_limit_minutes" class="font-weight-bold">
+                                        <i class="fas fa-hourglass"></i> Time Limit (minutes)
+                                    </label>
+                                    <input type="number" class="form-control" id="time_limit_minutes" 
+                                           name="time_limit_minutes" value="30" min="5" required>
+                                </div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="passing_percentage" class="font-weight-bold">
+                                        <i class="fas fa-percent"></i> Passing %
+                                    </label>
+                                    <input type="number" class="form-control" id="passing_percentage" 
+                                           name="passing_percentage" value="40" min="0" max="100">
+                                </div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="quiz_type" class="font-weight-bold">
+                                        <i class="fas fa-question-circle"></i> Type
+                                    </label>
+                                    <select class="form-control" id="quiz_type" name="quiz_type">
+                                        <option value="mcq" selected>Multiple Choice</option>
+                                        <option value="essay">Essay Questions</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="tags" class="font-weight-bold">
+                                        <i class="fas fa-tags"></i> Tags
+                                    </label>
+                                    <input type="text" class="form-control" id="tags" name="tags" 
+                                           placeholder="comma, separated, tags">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="font-weight-bold">
+                                        <i class="fas fa-toggle-on"></i> Options
+                                    </label>
+                                    <div class="custom-control custom-checkbox">
+                                        <input type="checkbox" class="custom-control-input" id="is_published" name="is_published">
+                                        <label class="custom-control-label" for="is_published">
+                                            Publish immediately
+                                        </label>
+                                    </div>
+                                    <div class="custom-control custom-checkbox mt-2">
+                                        <input type="checkbox" class="custom-control-input" id="generate_ai" name="generate_ai">
+                                        <label class="custom-control-label" for="generate_ai">
+                                            Generate questions using AI (Groq)
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- AI Generation Options -->
+                        <div id="ai_options" class="section mt-4 p-3 bg-light border rounded" style="display: none;">
+                            <h5><i class="fas fa-robot"></i> AI Generation Settings</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="num_questions" class="font-weight-bold">
+                                            Number of Questions
+                                        </label>
+                                        <input type="number" class="form-control" id="num_questions" 
+                                               name="num_questions" value="5" min="3" max="20">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <small class="text-muted">
+                                <i class="fas fa-lightbulb"></i>
+                                AI will generate professional questions without repetition.
+                                Quality is guaranteed with Groq's advanced language model.
+                            </small>
+                        </div>
+
+                        <!-- Manual Questions Section (shown when AI is not selected) -->
+                        <div id="manual_questions" class="section mt-4">
+                            <div class="section-header mb-3">
+                                <h4><i class="fas fa-list"></i> Questions</h4>
+                            </div>
+
+                            <div id="questions_container">
+                                <!-- Questions will be added here -->
+                            </div>
+
+                            <button type="button" class="btn btn-outline-primary mt-3" id="add_question_btn">
+                                <i class="fas fa-plus"></i> Add Question
+                            </button>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="form-actions mt-5 pt-3 border-top">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-save"></i> Create Quiz
+                            </button>
+                            <a href="{{ url_for('teacher_dashboard') }}" class="btn btn-secondary btn-lg ml-2">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .section-header {
+        padding-bottom: 10px;
+        border-bottom: 2px solid #007bff;
+    }
+
+    .section-header h4 {
+        color: #007bff;
+        font-weight: 600;
+    }
+
+    .question-card {
+        background: #f8f9fa;
+        border-left: 4px solid #007bff;
+        padding: 20px;
+        margin-bottom: 20px;
+        border-radius: 4px;
+    }
+
+    .option-input {
+        margin-bottom: 10px;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 10px;
+    }
+</style>
+
+<script>
+    // Toggle AI options visibility
+    document.getElementById('generate_ai').addEventListener('change', function() {
+        const aiOptions = document.getElementById('ai_options');
+        const manualQuestions = document.getElementById('manual_questions');
+        
+        if (this.checked) {
+            aiOptions.style.display = 'block';
+            manualQuestions.style.display = 'none';
+        } else {
+            aiOptions.style.display = 'none';
+            manualQuestions.style.display = 'block';
+            if (document.getElementById('questions_container').innerHTML === '') {
+                addQuestion();
+            }
+        }
+    });
+
+    // Add question function
+    function addQuestion() {
+        const container = document.getElementById('questions_container');
+        const questionIndex = container.children.length;
+
+        const questionHTML = `
+            <div class="question-card">
+                <h6>Question ${questionIndex + 1}</h6>
+                
+                <div class="form-group">
+                    <label>Question Text *</label>
+                    <textarea class="form-control" name="question_${questionIndex}" 
+                              placeholder="Enter question..." required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Explanation</label>
+                    <textarea class="form-control" name="explanation_${questionIndex}" 
+                              placeholder="Explain why this answer is correct..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Options *</label>
+                    <div id="options_${questionIndex}">
+                        <div class="option-input">
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="option_${questionIndex}_0" 
+                                       placeholder="Option A" required>
+                                <div class="input-group-append">
+                                    <div class="input-group-text">
+                                        <input type="radio" name="correct_${questionIndex}" value="0" checked>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="option-input">
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="option_${questionIndex}_1" 
+                                       placeholder="Option B" required>
+                                <div class="input-group-append">
+                                    <div class="input-group-text">
+                                        <input type="radio" name="correct_${questionIndex}" value="1">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="option-input">
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="option_${questionIndex}_2" 
+                                       placeholder="Option C" required>
+                                <div class="input-group-append">
+                                    <div class="input-group-text">
+                                        <input type="radio" name="correct_${questionIndex}" value="2">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="option-input">
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="option_${questionIndex}_3" 
+                                       placeholder="Option D" required>
+                                <div class="input-group-append">
+                                    <div class="input-group-text">
+                                        <input type="radio" name="correct_${questionIndex}" value="3">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" class="btn btn-sm btn-danger" onclick="removeQuestion(${questionIndex})">
+                    <i class="fas fa-trash"></i> Remove
+                </button>
+            </div>
+        `;
+
+        const div = document.createElement('div');
+        div.innerHTML = questionHTML;
+        container.appendChild(div.firstElementChild);
+    }
+
+    // Remove question function
+    function removeQuestion(index) {
+        const container = document.getElementById('questions_container');
+        container.children[index].remove();
+    }
+
+    // Add initial question on page load if not using AI
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!document.getElementById('generate_ai').checked) {
+            document.getElementById('manual_questions').style.display = 'block';
+            document.getElementById('ai_options').style.display = 'none';
+            if (document.getElementById('questions_container').children.length === 0) {
+                addQuestion();
+            }
+        } else {
+            document.getElementById('manual_questions').style.display = 'none';
+            document.getElementById('ai_options').style.display = 'block';
+        }
+    });
+
+    // Add question button
+    document.getElementById('add_question_btn').addEventListener('click', addQuestion);
+</script>
+{% endblock %}

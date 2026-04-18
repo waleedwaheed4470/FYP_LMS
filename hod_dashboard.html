@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}HOD Dashboard - LMS{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <nav class="dashboard-nav">
+        <div class="nav-brand">
+            <i class="fas fa-graduation-cap"></i>
+            <span>HOD Dashboard</span>
+        </div>
+        <div class="nav-user">
+            {% if user_profile_image %}
+                <img src="{{ user_profile_image }}" alt="Profile" class="nav-profile-img">
+            {% endif %}
+            <span>Welcome, {{ user_name }}</span>
+            <a href="{{ url_for('profile') }}" class="btn btn-small" style="margin: 0 10px;">
+                <i class="fas fa-user"></i> Profile
+            </a>
+            <a href="{{ url_for('logout') }}" class="btn btn-logout">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+    </nav>
+
+    <div class="dashboard-content">
+        <div class="dashboard-header">
+            <h1>Department Head Panel</h1>
+            <p>Manage courses, faculty assignments and monitor department performance.</p>
+        </div>
+
+        <div class="dashboard-stats">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-users-cog"></i></div>
+                <div class="stat-info"><h3>12</h3><p>Faculty Members</p></div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-book-open"></i></div>
+                <div class="stat-info"><h3>24</h3><p>Active Courses</p></div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-chart-pie"></i></div>
+                <div class="stat-info"><h3>85%</h3><p>Avg Completion</p></div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-calendar-check"></i></div>
+                <div class="stat-info"><h3>3</h3><p>Pending Approvals</p></div>
+            </div>
+        </div>
+
+        <div class="dashboard-section">
+            <h2>Manage Department</h2>
+            <div class="courses-grid">
+                <div class="course-card">
+                    <div class="course-image"><i class="fas fa-file-signature"></i></div>
+                    <div class="course-content">
+                        <h3>Assign Faculty</h3>
+                        <p>Quickly assign faculty to courses within your department.</p>
+                        <button class="btn btn-primary btn-small">Manage</button>
+                    </div>
+                </div>
+
+                <div class="course-card">
+                    <div class="course-image"><i class="fas fa-clipboard-list"></i></div>
+                    <div class="course-content">
+                        <h3>Review Submissions</h3>
+                        <p>Review course feedback and assignment stats.</p>
+                        <button class="btn btn-primary btn-small">Review</button>
+                    </div>
+                </div>
+
+                <div class="course-card">
+                    <div class="course-image"><i class="fas fa-user-graduate"></i></div>
+                    <div class="course-content">
+                        <h3>Student Reports</h3>
+                        <p>Monitor student performance across courses.</p>
+                        <button class="btn btn-primary btn-small">View</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

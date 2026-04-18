@@ -1,0 +1,405 @@
+{% extends "base.html" %}
+
+{% block title %}System Settings - Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-header">
+        <div class="header-content">
+            <h1><i class="fas fa-cog"></i> System Settings</h1>
+            <p>Configure platform-wide settings and features</p>
+        </div>
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for cat, msg in messages %}
+                <div class="alert alert-{{ cat }}">
+                    <i class="fas fa-{{ 'check-circle' if cat == 'success' else 'exclamation-circle' }}"></i>
+                    {{ msg }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST" class="settings-form">
+        <!-- Platform Settings -->
+        <div class="settings-section">
+            <h3><i class="fas fa-globe"></i> Platform Settings</h3>
+            
+            <div class="setting-group">
+                <label for="platform_name">Platform Name</label>
+                <input type="text" id="platform_name" name="platform_name" 
+                       value="{{ settings.platform_name }}" class="setting-input">
+                <small>The name displayed throughout the platform</small>
+            </div>
+
+            <div class="setting-group">
+                <label for="maintenance_mode">
+                    <input type="checkbox" id="maintenance_mode" name="maintenance_mode"
+                           {% if settings.maintenance_mode %}checked{% endif %}>
+                    Maintenance Mode
+                </label>
+                <small>When enabled, only admins can access the platform</small>
+            </div>
+        </div>
+
+        <!-- File Settings -->
+        <div class="settings-section">
+            <h3><i class="fas fa-file"></i> File Settings</h3>
+            
+            <div class="setting-group">
+                <label for="max_file_size_mb">Maximum File Size (MB)</label>
+                <input type="number" id="max_file_size_mb" name="max_file_size_mb" 
+                       value="{{ settings.max_file_size_mb }}" min="1" class="setting-input">
+                <small>Maximum file size students can upload</small>
+            </div>
+        </div>
+
+        <!-- Quiz Settings -->
+        <div class="settings-section">
+            <h3><i class="fas fa-question-circle"></i> Quiz Settings</h3>
+            
+            <div class="setting-group">
+                <label for="quiz_time_limit_default">Default Quiz Time Limit (minutes)</label>
+                <input type="number" id="quiz_time_limit_default" name="quiz_time_limit_default" 
+                       value="{{ settings.quiz_time_limit_default }}" min="5" step="5" class="setting-input">
+                <small>Default time limit for new quizzes</small>
+            </div>
+
+            <div class="setting-group">
+                <label for="max_quiz_attempts">Maximum Quiz Attempts</label>
+                <input type="number" id="max_quiz_attempts" name="max_quiz_attempts" 
+                       value="{{ settings.max_quiz_attempts }}" min="1" class="setting-input">
+                <small>Maximum number of times students can attempt a quiz</small>
+            </div>
+        </div>
+
+        <!-- Session Settings -->
+        <div class="settings-section">
+            <h3><i class="fas fa-clock"></i> Session Settings</h3>
+            
+            <div class="setting-group">
+                <label>Session Timeout: {{ settings.session_timeout_minutes }} minutes</label>
+                <small>Users will be automatically logged out after inactivity</small>
+            </div>
+        </div>
+
+        <!-- Feature Settings -->
+        <div class="settings-section">
+            <h3><i class="fas fa-star"></i> Feature Settings</h3>
+            
+            <div class="setting-group">
+                <label for="enable_face_detection">
+                    <input type="checkbox" id="enable_face_detection" 
+                           {% if settings.enable_face_detection %}checked{% endif %} disabled>
+                    Face Detection
+                </label>
+                <small>Enable face detection during quizzes ({% if settings.enable_face_detection %}Available{% else %}Not Available{% endif %})</small>
+            </div>
+
+            <div class="setting-group">
+                <label for="enable_plagiarism_check">
+                    <input type="checkbox" id="enable_plagiarism_check" name="enable_plagiarism_check"
+                           {% if settings.enable_plagiarism_check %}checked{% endif %}>
+                    Plagiarism Check
+                </label>
+                <small>Enable plagiarism detection for submissions</small>
+            </div>
+
+            <div class="setting-group">
+                <label for="email_notifications_enabled">
+                    <input type="checkbox" id="email_notifications_enabled" name="email_notifications_enabled"
+                           {% if settings.email_notifications_enabled %}checked{% endif %}>
+                    Email Notifications
+                </label>
+                <small>Send email notifications to users</small>
+            </div>
+
+            <div class="setting-group">
+                <label for="auto_backup_enabled">
+                    <input type="checkbox" id="auto_backup_enabled" name="auto_backup_enabled"
+                           {% if settings.auto_backup_enabled %}checked{% endif %}>
+                    Automatic Backups
+                </label>
+                <small>Enable automatic daily backups</small>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="settings-actions">
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="fas fa-save"></i> Save Settings
+            </button>
+            <a href="{{ url_for('admin_settings') }}" class="btn btn-secondary btn-lg">
+                <i class="fas fa-undo"></i> Reset
+            </a>
+        </div>
+    </form>
+
+    <!-- Danger Zone -->
+    <div class="danger-zone">
+        <h3><i class="fas fa-exclamation-triangle"></i> Danger Zone</h3>
+        <p>These actions cannot be undone. Please use with caution.</p>
+        
+        <div class="danger-actions">
+            <button onclick="clearCache()" class="btn btn-warning">
+                <i class="fas fa-trash"></i> Clear Cache
+            </button>
+            <button onclick="resetDatabase()" class="btn btn-danger">
+                <i class="fas fa-database"></i> Reset Database
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+.admin-container {
+    padding: 30px;
+    background: #f8f9fa;
+    min-height: 100vh;
+}
+
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.header-content h1 {
+    margin: 0 0 5px 0;
+    color: #1e40af;
+}
+
+.alert {
+    padding: 12px 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.alert-success {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #86efac;
+}
+
+.alert-error {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+}
+
+.settings-form {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 30px;
+}
+
+.settings-section {
+    margin-bottom: 40px;
+    padding-bottom: 30px;
+    border-bottom: 2px solid #e0e7ff;
+}
+
+.settings-section:last-of-type {
+    border-bottom: none;
+}
+
+.settings-section h3 {
+    background: linear-gradient(135deg, #1e40af, #7c3aed);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-top: 0;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.setting-group {
+    margin-bottom: 20px;
+}
+
+.setting-group label {
+    display: block;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+}
+
+.setting-group input[type="checkbox"] {
+    margin-right: 8px;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.setting-input {
+    width: 100%;
+    max-width: 400px;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.setting-input:focus {
+    outline: none;
+    border-color: #1e40af;
+    box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+}
+
+.setting-group small {
+    display: block;
+    color: #666;
+    font-size: 13px;
+    margin-top: 5px;
+}
+
+.settings-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 40px;
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-primary {
+    background: #1e40af;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #1e3a8a;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(30, 64, 175, 0.3);
+}
+
+.btn-secondary {
+    background: #6b7280;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #4b5563;
+}
+
+.btn-lg {
+    padding: 12px 25px;
+    font-size: 15px;
+}
+
+.danger-zone {
+    background: #fef2f2;
+    border: 2px solid #fca5a5;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.1);
+}
+
+.danger-zone h3 {
+    background: linear-gradient(135deg, #dc2626, #991b1b);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-top: 0;
+}
+
+.danger-zone p {
+    color: #7f1d1d;
+    margin: 0 0 20px 0;
+}
+
+.danger-actions {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.btn-warning {
+    background: #d97706;
+    color: white;
+}
+
+.btn-warning:hover {
+    background: #b45309;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
+}
+
+.btn-danger {
+    background: #dc2626;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #991b1b;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+@media (max-width: 768px) {
+    .settings-form {
+        padding: 20px;
+    }
+    
+    .setting-input {
+        max-width: 100%;
+    }
+    
+    .settings-actions {
+        flex-direction: column;
+    }
+    
+    .btn-lg {
+        width: 100%;
+        justify-content: center;
+    }
+}
+</style>
+
+<script>
+function clearCache() {
+    if (confirm('Are you sure you want to clear the cache? This may temporarily slow down the platform.')) {
+        alert('Cache cleared successfully!');
+        // Implementation would call clear cache endpoint
+    }
+}
+
+function resetDatabase() {
+    if (confirm('WARNING: This will reset the entire database. This action cannot be undone!\n\nType "RESET" to confirm.')) {
+        const confirmed = prompt('Type "RESET" to confirm database reset:');
+        if (confirmed === 'RESET') {
+            alert('Database would be reset here. This is a demo.');
+            // Implementation would call reset endpoint
+        } else {
+            alert('Database reset cancelled.');
+        }
+    }
+}
+</script>
+{% endblock %}

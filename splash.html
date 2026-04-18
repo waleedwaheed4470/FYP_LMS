@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome to LMS{% endblock %}
+
+{% block content %}
+<div class="splash-container">
+    <div class="splash-content">
+        <div class="logo-section">
+            <div class="logo-circle">
+                <i class="fas fa-graduation-cap"></i>
+            </div>
+            <h1 class="app-title">Learning Management System</h1>
+            <p class="app-subtitle">Empowering Education, Inspiring Excellence</p>
+        </div>
+        
+        <div class="splash-features">
+            <div class="feature-item">
+                <i class="fas fa-user-graduate"></i>
+                <h3>Student</h3>
+                <p>Access courses, assignments, and track your learning progress</p>
+            </div>
+            <div class="feature-item">
+                <i class="fas fa-chalkboard"></i>
+                <h3>Teacher</h3>
+                <p>Create assignments/quizzes, upload PDFs/DOCs, review submissions</p>
+            </div>
+            <div class="feature-item">
+                <i class="fas fa-chalkboard-teacher"></i>
+                <h3>HOD</h3>
+                <p>Manage departments, faculty, and monitor academic performance</p>
+            </div>
+            <div class="feature-item">
+                <i class="fas fa-user-shield"></i>
+                <h3>Admin</h3>
+                <p>Complete system control, user management, and configurations</p>
+            </div>
+        </div>
+        
+        <div class="splash-actions">
+            <a href="{{ url_for('signin') }}" class="btn btn-primary">
+                <i class="fas fa-sign-in-alt"></i> Sign In
+            </a>
+            <a href="{{ url_for('signup') }}" class="btn btn-secondary">
+                <i class="fas fa-user-plus"></i> Create Account
+            </a>
+            <a href="{{ url_for('signin') }}?role=teacher" class="btn btn-outline">
+                <i class="fas fa-chalkboard"></i> Teacher Sign In
+            </a>
+        </div>
+        
+        <div class="splash-footer">
+            <p>&copy; 2025 LMS. All rights reserved.</p>
+        </div>
+    </div>
+    
+    <div class="splash-background">
+        <div class="floating-shape shape-1"></div>
+        <div class="floating-shape shape-2"></div>
+        <div class="floating-shape shape-3"></div>
+        <div class="floating-shape shape-4"></div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - LMS{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <nav class="dashboard-nav">
+        <div class="nav-brand">
+            <i class="fas fa-graduation-cap"></i>
+            <span>LMS Dashboard</span>
+        </div>
+        <div class="nav-user">
+            {% if user_profile_image %}
+                <img src="{{ user_profile_image }}" alt="Profile" class="nav-profile-img">
+            {% endif %}
+            <span>Welcome, {{ user_name }}</span>
+            <a href="{{ url_for('profile') }}" class="btn btn-small" style="margin: 0 10px;">
+                <i class="fas fa-user"></i> Profile
+            </a>
+            <a href="{{ url_for('logout') }}" class="btn btn-logout">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+    </nav>
+    
+    <div class="dashboard-content">
+        <div class="dashboard-header">
+            <h1>Welcome to Your Learning Hub</h1>
+            <p>Continue your learning journey with our comprehensive courses</p>
+        </div>
+        
+        <div class="dashboard-stats">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-book"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>0</h3>
+                    <p>Enrolled Courses</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-tasks"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>0</h3>
+                    <p>Completed Courses</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-certificate"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>0</h3>
+                    <p>Certificates</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>0h</h3>
+                    <p>Learning Time</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="dashboard-section">
+            <h2>Popular Courses</h2>
+            <div class="courses-grid">
+                <div class="course-card">
+                    <div class="course-image">
+                        <i class="fas fa-code"></i>
+                    </div>
+                    <div class="course-content">
+                        <h3>Web Development Fundamentals</h3>
+                        <p>Learn HTML, CSS, and JavaScript from scratch</p>
+                        <div class="course-meta">
+                            <span><i class="fas fa-user"></i> 1,234 students</span>
+                            <span><i class="fas fa-star"></i> 4.8</span>
+                        </div>
+                        <button class="btn btn-primary btn-small">Enroll Now</button>
+                    </div>
+                </div>
+                
+                <div class="course-card">
+                    <div class="course-image">
+                        <i class="fas fa-python"></i>
+                    </div>
+                    <div class="course-content">
+                        <h3>Python Programming Masterclass</h3>
+                        <p>Master Python from basics to advanced concepts</p>
+                        <div class="course-meta">
+                            <span><i class="fas fa-user"></i> 2,456 students</span>
+                            <span><i class="fas fa-star"></i> 4.9</span>
+                        </div>
+                        <button class="btn btn-primary btn-small">Enroll Now</button>
+                    </div>
+                </div>
+                
+                <div class="course-card">
+                    <div class="course-image">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <div class="course-content">
+                        <h3>Database Design & SQL</h3>
+                        <p>Learn database design and SQL queries</p>
+                        <div class="course-meta">
+                            <span><i class="fas fa-user"></i> 987 students</span>
+                            <span><i class="fas fa-star"></i> 4.7</span>
+                        </div>
+                        <button class="btn btn-primary btn-small">Enroll Now</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

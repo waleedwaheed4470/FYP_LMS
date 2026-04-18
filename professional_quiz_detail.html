@@ -1,0 +1,337 @@
+{% extends "base.html" %}
+
+{% block title %}{{ quiz.title }} - Quiz Details{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-quiz"></i> {{ quiz.title }}
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <small class="text-muted">Subject</small>
+                            <p class="mb-3"><strong>{{ quiz.subject }}</strong></p>
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-muted">Quiz Number</small>
+                            <p class="mb-3"><strong>#{{ quiz.quiz_number }}</strong></p>
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-muted">Difficulty</small>
+                            <p class="mb-3">
+                                <span class="badge" style="background-color: {% if quiz.difficulty == 'easy' %} #28a745 {% elif quiz.difficulty == 'medium' %} #ffc107 {% else %} #dc3545 {% endif %}">
+                                    {{ quiz.difficulty|upper }}
+                                </span>
+                            </p>
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-muted">Status</small>
+                            <p class="mb-3">
+                                <span class="badge {% if quiz.is_published %}badge-success{% else %}badge-secondary{% endif %}">
+                                    {% if quiz.is_published %}✅ Published{% else %}📄 Draft{% endif %}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs Interface -->
+    <ul class="nav nav-tabs mb-4" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" id="overview-tab" data-toggle="tab" href="#overview" role="tab">
+                <i class="fas fa-eye"></i> Overview
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="submissions-tab" data-toggle="tab" href="#submissions" role="tab">
+                <i class="fas fa-file-upload"></i> Submissions ({{ submissions|length }})
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="analytics-tab" data-toggle="tab" href="#analytics" role="tab">
+                <i class="fas fa-chart-bar"></i> Analytics
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="questions-tab" data-toggle="tab" href="#questions" role="tab">
+                <i class="fas fa-list"></i> Questions
+            </a>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- Overview Tab -->
+        <div class="tab-pane fade show active" id="overview" role="tabpanel">
+            <div class="row">
+                <div class="col-lg-3">
+                    <div class="card text-center shadow-sm">
+                        <div class="card-body">
+                            <h3 class="text-primary">{{ quiz.total_questions }}</h3>
+                            <p class="mb-0" style="color: #6c757d;">Total Questions</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3">
+                    <div class="card text-center shadow-sm">
+                        <div class="card-body">
+                            <h3 class="text-info">{{ quiz.time_limit_minutes }}m</h3>
+                            <p class="mb-0" style="color: #6c757d;">Time Limit</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3">
+                    <div class="card text-center shadow-sm">
+                        <div class="card-body">
+                            <h3 class="text-success">{{ stats.total_submissions }}</h3>
+                            <p class="mb-0" style="color: #6c757d;">Student Attempts</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3">
+                    <div class="card text-center shadow-sm">
+                        <div class="card-body">
+                            <h3 class="text-warning">{{ quiz.passing_percentage }}%</h3>
+                            <p class="mb-0" style="color: #6c757d;">Passing Threshold</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-4 shadow">
+                <div class="card-header">
+                    <h6 class="mb-0">Description</h6>
+                </div>
+                <div class="card-body">
+                    <p>{{ quiz.description or 'No description provided.' }}</p>
+                </div>
+            </div>
+
+            {% if quiz.instructions %}
+            <div class="card mt-3 shadow">
+                <div class="card-header">
+                    <h6 class="mb-0">Instructions</h6>
+                </div>
+                <div class="card-body">
+                    <p>{{ quiz.instructions }}</p>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if quiz.tags %}
+            <div class="card mt-3 shadow">
+                <div class="card-header">
+                    <h6 class="mb-0">Tags</h6>
+                </div>
+                <div class="card-body">
+                    {% for tag in quiz.tags %}
+                    <span class="badge badge-light border border-secondary mr-2">{{ tag }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="alert alert-secondary mt-4">
+                <small class="text-muted">
+                    Created: {{ quiz.created_at }}
+                    | Last Updated: {{ quiz.updated_at }}
+                </small>
+            </div>
+        </div>
+
+        <!-- Submissions Tab -->
+        <div class="tab-pane fade" id="submissions" role="tabpanel">
+            <div class="card shadow">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Student Submissions</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Student Name</th>
+                                <th>Score</th>
+                                <th>Percentage</th>
+                                <th>Status</th>
+                                <th>Time Taken</th>
+                                <th>Submitted At</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if submissions %}
+                                {% for submission in submissions %}
+                                <tr>
+                                    <td>{{ submission.student_name }}</td>
+                                    <td><strong>{{ submission.score }}/{{ submission.total_questions }}</strong></td>
+                                    <td>
+                                        <span class="badge {% if submission.is_passed %}badge-success{% else %}badge-danger{% endif %}">
+                                            {{ submission.percentage }}%
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if submission.is_passed %}
+                                        <span class="badge badge-success">Passed</span>
+                                        {% else %}
+                                        <span class="badge badge-warning">Not Passed</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ submission.time_taken_formatted }}</td>
+                                    <td><small class="text-muted">{{ submission.submitted_at }}</small></td>
+                                    <td>
+                                        <a href="{{ url_for('professional_quiz_result', submission_id=submission.id) }}" 
+                                           class="btn btn-sm btn-info">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted p-4">
+                                    <i class="fas fa-inbox"></i> No submissions yet
+                                </td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics Tab -->
+        <div class="tab-pane fade" id="analytics" role="tabpanel">
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="card shadow">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">Performance Summary</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="stat-box mb-3">
+                                <small class="text-muted">Average Percentage</small>
+                                <h2 class="text-primary">{{ stats.average_percentage }}%</h2>
+                            </div>
+                            <div class="stat-box mb-3">
+                                <small class="text-muted">Passed / Failed</small>
+                                <h3>
+                                    <span class="text-success">{{ stats.pass_count }}</span> / 
+                                    <span class="text-danger">{{ stats.fail_count }}</span>
+                                </h3>
+                            </div>
+                            {% if stats.total_submissions > 0 %}
+                            <div class="stat-box">
+                                <small class="text-muted">Pass Rate</small>
+                                <h2 class="text-info">
+                                    {{ (stats.pass_count / stats.total_submissions * 100)|round(1) }}%
+                                </h2>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="card shadow">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">Time Statistics</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="stat-box">
+                                <small class="text-muted">Average Time Taken</small>
+                                {% if stats.average_time %}
+                                <h3>
+                                    {% set mins = stats.average_time // 60 %}
+                                    {% set secs = stats.average_time % 60 %}
+                                    {{ mins }}m {{ secs }}s
+                                </h3>
+                                {% else %}
+                                <p class="text-muted">No data yet</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Questions Tab -->
+        <div class="tab-pane fade" id="questions" role="tabpanel">
+            <div class="card shadow">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">Quiz Questions ({{ quiz.total_questions }})</h6>
+                </div>
+                <div class="card-body">
+                    {% for question in quiz.questions %}
+                    <div class="question-item mb-4 p-3 border rounded" style="background-color: #f8f9fa;">
+                        <h6 class="mb-3">
+                            <span class="badge badge-primary">Q{{ loop.index }}</span>
+                            {{ question.question }}
+                        </h6>
+
+                        {% if question.options %}
+                        <div class="ml-3">
+                            <small class="text-muted">Options:</small>
+                            <ol class="mb-2">
+                                {% for option in question.options %}
+                                <li>{{ option }}
+                                    {% if loop.index0 == question.correct_answer %}
+                                    <span class="badge badge-success">Correct Answer</span>
+                                    {% endif %}
+                                </li>
+                                {% endfor %}
+                            </ol>
+                        </div>
+                        {% endif %}
+
+                        {% if question.explanation %}
+                        <small class="text-muted">
+                            <strong>Explanation:</strong> {{ question.explanation }}
+                        </small>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="mt-4 mb-4">
+        <a href="{{ url_for('teacher_dashboard') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+        <a href="{{ url_for('create_professional_quiz') }}" class="btn btn-primary ml-2">
+            <i class="fas fa-plus"></i> Create New Quiz
+        </a>
+    </div>
+</div>
+
+<style>
+    .stat-box {
+        padding: 15px 0;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .stat-box:last-child {
+        border-bottom: none;
+    }
+
+    .question-item {
+        transition: all 0.3s ease;
+    }
+
+    .question-item:hover {
+        background-color: #ffffff !important;
+        border-width: 2px !important;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,598 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Quiz - LMS{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <nav class="dashboard-nav">
+        <div class="nav-brand">
+            <i class="fas fa-chalkboard-teacher"></i>
+            <span>Edit Quiz</span>
+        </div>
+        <div class="nav-user">
+            <a href="{{ url_for('teacher_quiz_detail', quiz_id=quiz.id) }}" class="btn btn-outline btn-small">
+                <i class="fas fa-arrow-left"></i> Back to Quiz
+            </a>
+        </div>
+    </nav>
+
+    <div class="dashboard-content">
+        <div class="dashboard-header">
+            <h1>Edit Quiz</h1>
+            <p>Update your quiz details and questions</p>
+        </div>
+
+        <!-- Edit Quiz Section -->
+        <div class="quiz-builder-card">
+            <form id="quizForm" method="POST" action="{{ url_for('teacher_edit_quiz', quiz_id=quiz.id) }}">
+                
+                <!-- Quiz Info Section -->
+                <div class="quiz-info-section">
+                    <h3>Quiz Information</h3>
+                    
+                    <div class="form-group">
+                        <label for="title">
+                            <i class="fas fa-heading"></i> Quiz Title <span class="required">*</span>
+                        </label>
+                        <input type="text" id="title" name="title" placeholder="e.g., Chapter 5 — Data Structures Quiz" 
+                               value="{{ quiz.title }}" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">
+                            <i class="fas fa-align-left"></i> Description
+                        </label>
+                        <textarea id="description" name="description" rows="3" 
+                                  placeholder="Brief description or instructions for students...">{{ quiz.description or '' }}</textarea>
+                    </div>
+
+                    <div class="form-row-inline">
+                        <div class="form-group">
+                            <label for="time_limit_minutes">
+                                <i class="fas fa-clock"></i> Time Limit (minutes) <span class="required">*</span>
+                            </label>
+                            <input type="number" id="time_limit_minutes" name="time_limit_minutes" 
+                                   value="{{ quiz.time_limit_minutes or 30 }}" min="1" max="180" required>
+                            <small style="color: #666; margin-top: 5px; display: block;">⏱️ Set the time students have to complete this quiz</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="is_active">
+                                <i class="fas fa-toggle-on"></i> Status
+                            </label>
+                            <label class="switch-label">
+                                <input type="checkbox" id="is_active" name="is_active" {% if quiz.is_active %}checked{% endif %}>
+                                <span class="switch-text">Active — Students can take this quiz</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Questions Section -->
+                <div class="quiz-questions-section">
+                    <div class="section-header-row">
+                        <h3>Questions</h3>
+                        <button type="button" class="btn btn-primary btn-small" onclick="addQuestion()">
+                            <i class="fas fa-plus"></i> Add Question
+                        </button>
+                    </div>
+
+                    <div id="questionsContainer">
+                        <!-- Questions will be loaded here by JS -->
+                    </div>
+
+                    <div id="noQuestionsMsg" class="empty-state" style="padding: 40px 20px; display: none;">
+                        <i class="fas fa-question-circle"></i>
+                        <h3>No Questions Yet</h3>
+                        <p>Click "Add Question" to add questions to your quiz</p>
+                    </div>
+                </div>
+
+                <!-- Submit -->
+                <div class="quiz-submit-section">
+                    <div class="quiz-summary" id="quizSummary">
+                        <span><i class="fas fa-list"></i> <strong id="questionCount">0</strong> Questions</span>
+                        <span><i class="fas fa-clock"></i> <strong id="timeLimitDisplay">30</strong> Minutes</span>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-large" id="submitBtn" disabled>
+                        <i class="fas fa-save"></i> Update Quiz
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.quiz-builder-card {
+    background: white;
+    border-radius: 16px;
+    padding: 35px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+
+.quiz-info-section,
+.quiz-questions-section {
+    margin-bottom: 35px;
+    padding-bottom: 30px;
+    border-bottom: 2px solid #f0f0f5;
+}
+
+.quiz-info-section h3,
+.quiz-questions-section h3 {
+    font-size: 20px;
+    color: #2c3e50;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.quiz-info-section h3 i,
+.quiz-questions-section h3 i {
+    color: #1e40af;
+}
+
+.form-row-inline {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 25px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: 'Poppins', sans-serif;
+    transition: border-color 0.3s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #1e40af;
+}
+
+.required {
+    color: #ef4444;
+}
+
+.switch-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    padding: 10px 0;
+}
+
+.switch-label input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: #1e40af;
+}
+
+.switch-text {
+    font-size: 14px;
+    color: #555;
+}
+
+.section-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+/* Question Card */
+.question-card {
+    background: #f8f9fb;
+    border: 2px solid #e8e8f0;
+    border-radius: 14px;
+    padding: 25px;
+    margin-bottom: 20px;
+    position: relative;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.question-card:hover {
+    border-color: #1e40af;
+    box-shadow: 0 2px 12px rgba(30, 64, 175, 0.1);
+}
+
+.question-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+}
+
+.question-number {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e40af;
+    background: rgba(30, 64, 175, 0.1);
+    padding: 6px 16px;
+    border-radius: 20px;
+}
+
+.remove-question-btn {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid #ef4444;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.remove-question-btn:hover {
+    background: #ef4444;
+    color: white;
+}
+
+.question-card .form-group {
+    margin-bottom: 15px;
+}
+
+.question-card .form-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 6px;
+    display: block;
+}
+
+.question-card input[type="text"],
+.question-card textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: 'Poppins', sans-serif;
+    transition: border-color 0.3s;
+}
+
+.question-card input:focus,
+.question-card textarea:focus {
+    outline: none;
+    border-color: #1e40af;
+}
+
+/* Options */
+.options-container {
+    margin-top: 15px;
+}
+
+.options-container h4 {
+    font-size: 14px;
+    color: #2c3e50;
+    margin-bottom: 12px;
+}
+
+.option-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.option-label-badge {
+    width: 30px;
+    height: 30px;
+    background: #1e40af;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+.option-input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: 'Poppins', sans-serif;
+    transition: border-color 0.3s;
+}
+
+.option-input:focus {
+    outline: none;
+    border-color: #1e40af;
+}
+
+.option-radio {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.option-radio input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #27ae60;
+    cursor: pointer;
+}
+
+.option-radio label {
+    font-size: 13px;
+    color: #27ae60;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.remove-option-btn {
+    background: none;
+    border: none;
+    color: #aaa;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 6px;
+    transition: color 0.3s;
+}
+
+.remove-option-btn:hover {
+    color: #ef4444;
+}
+
+.add-option-btn {
+    background: rgba(30, 64, 175, 0.08);
+    color: #1e40af;
+    border: 1px dashed #1e40af;
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: all 0.3s;
+}
+
+.add-option-btn:hover {
+    background: rgba(30, 64, 175, 0.18);
+}
+
+/* Submit Section */
+.quiz-submit-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 25px;
+}
+
+.quiz-summary {
+    display: flex;
+    gap: 25px;
+    font-size: 15px;
+    color: #555;
+}
+
+.quiz-summary i {
+    color: #1e40af;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .form-row-inline {
+        grid-template-columns: 1fr;
+    }
+    .quiz-submit-section {
+        flex-direction: column;
+        gap: 15px;
+    }
+    .quiz-builder-card {
+        padding: 20px;
+    }
+}
+</style>
+
+<script>
+let questionCount = 0;
+const optionLabels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+const existingQuestions = {{ quiz.questions|tojson }};
+
+function addQuestion() {
+    const container = document.getElementById('questionsContainer');
+    const noMsg = document.getElementById('noQuestionsMsg');
+    noMsg.style.display = 'none';
+
+    const qIndex = questionCount;
+    questionCount++;
+
+    const card = document.createElement('div');
+    card.className = 'question-card';
+    card.id = `question_card_${qIndex}`;
+    card.innerHTML = `
+        <div class="question-card-header">
+            <span class="question-number">Question ${questionCount}</span>
+            <button type="button" class="remove-question-btn" onclick="removeQuestion(${qIndex})">
+                <i class="fas fa-trash"></i> Remove
+            </button>
+        </div>
+        <div class="form-group">
+            <label>Question Text <span class="required">*</span></label>
+            <textarea name="question_${qIndex}" rows="2" placeholder="Enter your question..." required></textarea>
+        </div>
+        <div class="options-container" id="options_${qIndex}">
+            <h4>Options (select the correct answer)</h4>
+            <div id="optionsList_${qIndex}">
+                ${createOptionRow(qIndex, 0, 'A', true)}
+                ${createOptionRow(qIndex, 1, 'B', false)}
+                ${createOptionRow(qIndex, 2, 'C', false)}
+                ${createOptionRow(qIndex, 3, 'D', false)}
+            </div>
+            <button type="button" class="add-option-btn" onclick="addOption(${qIndex})">
+                <i class="fas fa-plus"></i> Add Option
+            </button>
+        </div>
+    `;
+
+    container.appendChild(card);
+    updateSummary();
+}
+
+function createOptionRow(qIndex, optIndex, label, checked) {
+    return `
+        <div class="option-row" id="option_${qIndex}_${optIndex}">
+            <span class="option-label-badge">${label}</span>
+            <input type="text" class="option-input" name="option_${qIndex}_${optIndex}" 
+                   placeholder="Option ${label}" required>
+            <div class="option-radio">
+                <input type="radio" name="correct_${qIndex}" value="${optIndex}" 
+                       id="correct_${qIndex}_${optIndex}" ${checked ? 'checked' : ''}>
+                <label for="correct_${qIndex}_${optIndex}">Correct</label>
+            </div>
+            ${optIndex >= 2 ? `<button type="button" class="remove-option-btn" onclick="removeOption(${qIndex}, ${optIndex})">
+                <i class="fas fa-times"></i>
+            </button>` : ''}
+        </div>
+    `;
+}
+
+function addOption(qIndex) {
+    const list = document.getElementById(`optionsList_${qIndex}`);
+    const currentOptions = list.querySelectorAll('.option-row').length;
+    
+    if (currentOptions >= 8) {
+        alert('Maximum 8 options allowed.');
+        return;
+    }
+
+    const label = optionLabels[currentOptions] || (currentOptions + 1).toString();
+    const div = document.createElement('div');
+    div.className = 'option-row';
+    div.id = `option_${qIndex}_${currentOptions}`;
+    div.innerHTML = `
+        <span class="option-label-badge">${label}</span>
+        <input type="text" class="option-input" name="option_${qIndex}_${currentOptions}" 
+               placeholder="Option ${label}" required>
+        <div class="option-radio">
+            <input type="radio" name="correct_${qIndex}" value="${currentOptions}" 
+                   id="correct_${qIndex}_${currentOptions}">
+            <label for="correct_${qIndex}_${currentOptions}">Correct</label>
+        </div>
+        <button type="button" class="remove-option-btn" onclick="removeOption(${qIndex}, ${currentOptions})">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    list.appendChild(div);
+}
+
+function removeOption(qIndex, optIndex) {
+    const optRow = document.getElementById(`option_${qIndex}_${optIndex}`);
+    if (optRow) {
+        const list = document.getElementById(`optionsList_${qIndex}`);
+        const remaining = list.querySelectorAll('.option-row').length;
+        if (remaining <= 2) {
+            alert('Minimum 2 options required.');
+            return;
+        }
+        optRow.remove();
+    }
+}
+
+function removeQuestion(qIndex) {
+    const card = document.getElementById(`question_card_${qIndex}`);
+    if (card) {
+        card.remove();
+        renumberQuestions();
+        updateSummary();
+    }
+}
+
+function renumberQuestions() {
+    const cards = document.querySelectorAll('.question-card');
+    cards.forEach((card, i) => {
+        const numEl = card.querySelector('.question-number');
+        if (numEl) numEl.textContent = `Question ${i + 1}`;
+    });
+    const noMsg = document.getElementById('noQuestionsMsg');
+    if (cards.length === 0) noMsg.style.display = '';
+}
+
+function updateSummary() {
+    const count = document.querySelectorAll('.question-card').length;
+    document.getElementById('questionCount').textContent = count;
+    document.getElementById('submitBtn').disabled = count === 0;
+}
+
+// Time limit display sync
+document.getElementById('time_limit_minutes').addEventListener('input', function() {
+    document.getElementById('timeLimitDisplay').textContent = this.value || '30';
+});
+
+// Load existing questions
+document.addEventListener('DOMContentLoaded', function() {
+    if (existingQuestions && existingQuestions.length > 0) {
+        existingQuestions.forEach((q, idx) => {
+            addQuestion();
+            const card = document.getElementById(`question_card_${idx}`);
+            if (card) {
+                // Set question text
+                const qTextarea = card.querySelector('textarea');
+                if (qTextarea) {
+                    qTextarea.value = q.question || '';
+                }
+
+                // Set options
+                const optionsList = card.querySelector(`#optionsList_${idx}`);
+                if (optionsList) {
+                    optionsList.innerHTML = '';
+                    const options = q.options || [];
+                    options.forEach((opt, oIdx) => {
+                        const label = optionLabels[oIdx] || String.fromCharCode(65 + oIdx);
+                        const div = document.createElement('div');
+                        div.className = 'option-row';
+                        div.id = `option_${idx}_${oIdx}`;
+                        div.innerHTML = `
+                            <span class="option-label-badge">${label}</span>
+                            <input type="text" class="option-input" name="option_${idx}_${oIdx}" 
+                                   placeholder="Option ${label}" value="${opt}" required>
+                            <div class="option-radio">
+                                <input type="radio" name="correct_${idx}" value="${oIdx}" 
+                                       id="correct_${idx}_${oIdx}" ${oIdx === q.correct_answer ? 'checked' : ''}>
+                                <label for="correct_${idx}_${oIdx}">Correct</label>
+                            </div>
+                            ${oIdx >= 2 ? `<button type="button" class="remove-option-btn" onclick="removeOption(${idx}, ${oIdx})">
+                                <i class="fas fa-times"></i>
+                            </button>` : ''}
+                        `;
+                        optionsList.appendChild(div);
+                    });
+                }
+            }
+        });
+    } else {
+        // If no existing questions, add one empty
+        addQuestion();
+    }
+    updateSummary();
+});
+</script>
+
+{% endblock %}

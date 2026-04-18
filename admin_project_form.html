@@ -1,0 +1,337 @@
+{% extends "base.html" %}
+
+{% block title %}{% if project %}Edit Project{% else %}Create Project{% endif %} - Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="form-header">
+        <div class="header-content">
+            <h1>
+                <i class="fas fa-{% if project %}edit{% else %}plus-circle{% endif %}"></i>
+                {% if project %}Edit Project{% else %}Create New Project{% endif %}
+            </h1>
+            <p>{% if project %}Update project details{% else %}Add a new project with teacher assignment{% endif %}</p>
+        </div>
+        <a href="{{ url_for('admin_projects') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back
+        </a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for cat, msg in messages %}
+                <div class="alert alert-{{ cat }}">
+                    <i class="fas fa-{% if cat == 'success' %}check-circle{% else %}exclamation-circle{% endif %}"></i>
+                    {{ msg }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST" class="project-form professional">
+        <div class="form-section">
+            <h2><i class="fas fa-info-circle"></i> Project Information</h2>
+            
+            <div class="form-group">
+                <label for="project_name">
+                    Project Name <span class="required">*</span>
+                </label>
+                <input 
+                    type="text" 
+                    id="project_name" 
+                    name="project_name" 
+                    class="form-control"
+                    placeholder="e.g., Database Design Project"
+                    value="{{ project.project_name if project else '' }}"
+                    required
+                >
+                <small>Enter a descriptive name for the project</small>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="teacher_id">
+                        Assign Teacher <span class="required">*</span>
+                    </label>
+                    <select id="teacher_id" name="teacher_id" class="form-control" required>
+                        <option value="">-- Select a Teacher --</option>
+                        {% if teachers %}
+                            {% for teacher in teachers %}
+                            <option value="{{ teacher.id }}" {% if project and project.teacher_id == teacher.id %}selected{% endif %}>
+                                {{ teacher.name }} ({{ teacher.email }})
+                            </option>
+                            {% endfor %}
+                        {% else %}
+                            <option value="">No teachers found. Create a teacher account first.</option>
+                        {% endif %}
+                    </select>
+                    <small>Select the teacher who will supervise this project</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="section">
+                        Section <span class="required">*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="section" 
+                        name="section" 
+                        class="form-control"
+                        placeholder="e.g., A, B, C or CS-101, CS-102"
+                        value="{{ project.section if project else '' }}"
+                        required
+                    >
+                    <small>Section identifier (e.g., A, B, C or course code)</small>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="category">
+                    Category
+                </label>
+                <input 
+                    type="text" 
+                    id="category" 
+                    name="category" 
+                    class="form-control"
+                    placeholder="e.g., Web Development, Mobile App, Data Analysis"
+                    value="{{ project.category if project else 'General' }}"
+                >
+                <small>Project category or type (optional)</small>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h2><i class="fas fa-file-alt"></i> Description</h2>
+            
+            <div class="form-group">
+                <label for="description">
+                    Project Description
+                </label>
+                <textarea 
+                    id="description" 
+                    name="description" 
+                    class="form-control"
+                    placeholder="Provide a detailed description of the project objectives, requirements, tasks, and expected outcomes..."
+                    rows="5"
+                >{{ project.description if project else '' }}</textarea>
+                <small>Detailed description helps students understand the project requirements. This will be visible to both teachers and students.</small>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="fas fa-save"></i>
+                {{ 'Update Project' if project else 'Create Project' }}
+            </button>
+            <a href="{{ url_for('admin_projects') }}" class="btn btn-secondary btn-lg">
+                <i class="fas fa-times"></i> Cancel
+            </a>
+        </div>
+    </form>
+</div>
+
+<style>
+.admin-container {
+    padding: 30px;
+    background: #f8f9fa;
+    min-height: 100vh;
+}
+
+.form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.header-content h1 {
+    margin: 0 0 5px 0;
+    color: #1e40af;
+    font-size: 28px;
+}
+
+.header-content p {
+    margin: 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.project-form {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.form-section {
+    padding: 30px;
+    border-bottom: 1px solid #eee;
+}
+
+.form-section:last-of-type {
+    border-bottom: none;
+}
+
+.form-section h2 {
+    margin: 0 0 20px 0;
+    color: #1e40af;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group:last-child {
+    margin-bottom: 0;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #374151;
+    font-size: 14px;
+}
+
+.required {
+    color: #dc2626;
+}
+
+.form-control {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #1e40af;
+    box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+}
+
+textarea.form-control {
+    resize: vertical;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.form-group small {
+    display: block;
+    margin-top: 5px;
+    color: #6b7280;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.form-actions {
+    padding: 20px 30px;
+    background: #f9fafb;
+    border-top: 1px solid #eee;
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.btn-primary {
+    background: #1e40af;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #1e3a8a;
+}
+
+.btn-secondary {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+.btn-secondary:hover {
+    background: #d1d5db;
+}
+
+.btn-lg {
+    padding: 14px 28px;
+    font-size: 15px;
+}
+
+.alert {
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+}
+
+.alert-success {
+    background: #d1fae5;
+    color: #065f46;
+    border-left: 4px solid #10b981;
+}
+
+.alert-error {
+    background: #fee2e2;
+    color: #7f1d1d;
+    border-left: 4px solid #dc2626;
+}
+
+@media (max-width: 750px) {
+    .admin-container {
+        padding: 15px;
+    }
+
+    .form-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .form-section {
+        padding: 20px;
+    }
+
+    .form-actions {
+        flex-direction: column;
+        justify-content: stretch;
+    }
+
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+</style>
+{% endblock %}

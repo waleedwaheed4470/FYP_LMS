@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - LMS{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <nav class="dashboard-nav">
+        <div class="nav-brand">
+            <i class="fas fa-graduation-cap"></i>
+            <span>LMS Dashboard</span>
+        </div>
+        <div class="nav-user">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-small" style="margin-right: 10px;">
+                <i class="fas fa-home"></i> Dashboard
+            </a>
+            <a href="{{ url_for('logout') }}" class="btn btn-logout">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+    </nav>
+    
+    <div class="dashboard-content">
+        <div class="profile-container">
+            <div class="profile-card">
+                <div class="profile-header">
+                    <h1>My Profile</h1>
+                    <p>Manage your account information</p>
+                </div>
+                
+                <div class="profile-content">
+                    <!-- Profile Image Section -->
+                    <div class="profile-image-section">
+                        <div class="profile-image-display">
+                            {% if user_data.profile_image %}
+                                <img src="{{ user_data.profile_image }}" alt="Profile" class="profile-img">
+                            {% else %}
+                                <div class="profile-img-placeholder">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <form method="POST" enctype="multipart/form-data" class="image-upload-form">
+                            <div class="form-group">
+                                <label for="profile_image" class="file-upload-label">
+                                    <i class="fas fa-camera"></i> Change Profile Picture
+                                </label>
+                                <input type="file" id="profile_image" name="profile_image" accept="image/*" onchange="previewImage(this)">
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-small">
+                                <i class="fas fa-upload"></i> Upload Photo
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <!-- Profile Info Section -->
+                    <div class="profile-info-section">
+                        <form method="POST" class="profile-form">
+                            <div class="form-group">
+                                <label for="full_name">
+                                    <i class="fas fa-user"></i> Full Name
+                                </label>
+                                <input type="text" id="full_name" name="full_name" value="{{ user_data.full_name }}" placeholder="Enter your full name">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="email">
+                                    <i class="fas fa-envelope"></i> Email Address
+                                </label>
+                                <input type="email" id="email" name="email" value="{{ user_data.email }}" disabled>
+                                <small>Email cannot be changed</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="username">
+                                    <i class="fas fa-user-circle"></i> Username
+                                </label>
+                                <input type="text" id="username" name="username" value="{{ user_data.username }}" disabled>
+                                <small>Username cannot be changed</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="role">
+                                    <i class="fas fa-user-tag"></i> Role
+                                </label>
+                                <input type="text" id="role" name="role" value="{{ user_data.role | upper }}" disabled>
+                                <small>Role is assigned by admin</small>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Changes
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function previewImage(input) {
+    if (input.files && input.files[0]) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            const display = document.querySelector('.profile-image-display');
+            display.innerHTML = '<img src="' + e.target.result + '" alt="Profile" class="profile-img">';
+        }
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+</script>
+{% endblock %}

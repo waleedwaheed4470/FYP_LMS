@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}Activity{% endblock %}
+{% block content %}
+<div class="container">
+  <a class="btn" href="{{ url_for('student_activities') }}">← Back</a>
+  <h1 class="page-title">{{ activity.title }}</h1>
+  <div class="muted">Type: {{ activity.type|capitalize }}</div>
+  {% if activity.due_date %}
+    <div class="muted">Due: {{ activity.due_date.strftime('%Y-%m-%d %H:%M') if activity.due_date.strftime is defined else activity.due_date }}</div>
+  {% endif %}
+  <p>{{ activity.description }}</p>
+  {% if activity.attachments and activity.attachments|length > 0 %}
+    <div class="materials">
+      <h3>Materials</h3>
+      <ul class="list">
+        {% for att in activity.attachments %}
+          <li>
+            <a href="{{ att.url }}" target="_blank"><i class="fas fa-file"></i> {{ att.name }}</a>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <hr />
+  <h2>Your Submission</h2>
+  {% if submission %}
+    <p class="muted">Submitted at: {{ submission.submitted_at }}</p>
+    <p><a href="{{ submission.file_url }}" target="_blank">{{ submission.file_name }}</a></p>
+    <p class="muted">You can resubmit to replace the file.</p>
+  {% else %}
+    <p class="muted">You haven't submitted yet.</p>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" class="form">
+    <div class="form-group">
+      <label for="submission">Upload Submission (PDF/DOC/DOCX)</label>
+      <input id="submission" name="submission" type="file" accept=".pdf,.doc,.docx" class="input" required />
+    </div>
+    <button class="btn btn-primary" type="submit">Submit</button>
+  </form>
+</div>
+{% endblock %}
